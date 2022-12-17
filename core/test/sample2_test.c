@@ -7,7 +7,7 @@
 
 void get_magic_number_test(void **state)
 {
-    assert_int_equal(get_magic_number(), MY_MAGIC_NUMBER);
+    assert_int_equal(get_magic_number(), MY_MAGIC_NUMBER + 1);
 }
 
 int main()
