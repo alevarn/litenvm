@@ -5,13 +5,18 @@
 
 typedef struct
 {
-    void *(*allocator)(size_t);
-    void (*deallocator)(void *);
-    int evalblock_length;
+    void *(*_malloc)(size_t);
+    void *(*_realloc)(void *, size_t);
+    void (*_free)(void *);
+    size_t min_stack_capacity;
 } Config;
 
 extern Config config;
 
-void set_config(void *(*allocator)(size_t), void (*deallocator)(void *), int evalblock_length);
+void set_config(
+    void *(*_malloc)(size_t),
+    void *(*_realloc)(void *, size_t),
+    void (*_free)(void *),
+    size_t min_stack_capacity);
 
 #endif
