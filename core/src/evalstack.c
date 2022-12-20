@@ -1,19 +1,20 @@
-#include <malloc.h>
-
+#include "config.h"
 #include "evalstack.h"
+
+#define EVALBLOCK_ITEMS_BYTES (sizeof(StackItem) * config.evalblock_length)
 
 static EvalBlock *alloc_block()
 {
-    EvalBlock *block = (EvalBlock *)malloc(sizeof(EvalBlock));
-    block->items = (StackItem *)malloc(EVALBLOCK_ITEMS_BYTES);
+    EvalBlock *block = (EvalBlock *)config.allocator(sizeof(EvalBlock));
+    block->items = (StackItem *)config.allocator(EVALBLOCK_ITEMS_BYTES);
     block->next = NULL;
     return block;
 }
 
 static void dealloc_block(EvalBlock *evalstack)
 {
-    free(evalstack->items);
-    free(evalstack);
+    config.deallocator(evalstack->items);
+    config.deallocator(evalstack);
 }
 
 EvalBlock *evalstack_new()

@@ -5,6 +5,7 @@ set(INC_DIR include)
 
 set(SRC_FILES 
     ${SRC_DIR}/evalstack.c
+    ${SRC_DIR}/config.c
 )
 
 # Build the litenvm core library. 

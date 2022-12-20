@@ -3,10 +3,6 @@
 
 #include "stackitem.h"
 
-#define EVALBLOCK_NUMBER_OF_ITEMS 64
-
-#define EVALBLOCK_ITEMS_BYTES (sizeof(StackItem) * EVALBLOCK_NUMBER_OF_ITEMS)
-
 typedef struct EvalBlock
 {
     StackItem *items;
