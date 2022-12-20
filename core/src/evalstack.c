@@ -1,12 +1,10 @@
 #include "config.h"
 #include "evalstack.h"
 
-#define EVALBLOCK_ITEMS_BYTES (sizeof(StackItem) * config.evalblock_length)
-
 static EvalBlock *alloc_block()
 {
     EvalBlock *block = (EvalBlock *)config.allocator(sizeof(EvalBlock));
-    block->items = (StackItem *)config.allocator(EVALBLOCK_ITEMS_BYTES);
+    block->items = (StackItem *)config.allocator(sizeof(StackItem) * config.evalblock_length);
     block->next = NULL;
     return block;
 }

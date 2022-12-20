@@ -3,7 +3,8 @@
 Config config = {
     .allocator = malloc,
     .deallocator = free,
-    .evalblock_length = 64};
+    .evalblock_length = 64
+};
 
 void set_config(void *(*allocator)(size_t), void (*deallocator)(void *), int evalblock_length)
 {
