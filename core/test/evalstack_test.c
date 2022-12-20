@@ -3,19 +3,18 @@
 #include <stddef.h>
 #include <cmocka.h>
 
-#include "sample.h"
+#include "evalstack.h"
 
-void get_magic_number_test(void **state)
+void evalstack_new_test(void **state)
 {
-    assert_int_equal(get_magic_number(), MY_MAGIC_NUMBER);
+    EvalBlock *evalstack = evalstack_new();
 }
 
 int main()
 {
     const struct CMUnitTest tests[] =
         {
-            cmocka_unit_test(get_magic_number_test)
-        };
+            cmocka_unit_test(evalstack_new_test)};
 
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
