@@ -1,6 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <stddef.h>
+
 typedef struct
 {
     size_t capacity;
