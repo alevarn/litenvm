@@ -1,13 +1,15 @@
 #ifndef EVALSTACK_H
 #define EVALSTACK_H
 
+#include <stdint.h>
+
 #include "stack.h"
 
 typedef Stack EvalStack;
 
 typedef union
 {
-    int integer;
+    int32_t integer;
     void *pointer;
 } EvalStackElement;
 
