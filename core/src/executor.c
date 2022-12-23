@@ -3,13 +3,11 @@
 #include "config.h"
 #include "executor.h"
 
-Executor executor_new(Instruction *instructions, size_t length)
+Executor executor_new(ConstantPool constpool, InstructionStream inststream)
 {
     return (Executor){
-        .stream = (InstructionStream){
-            .length = length,
-            .current = 0,
-            .instructions = instructions},
+        .constpool = constpool,
+        .stream = inststream,
         .evalstack = evalstack_new(),
         .callstack = callstack_new()};
 }
@@ -17,59 +15,60 @@ Executor executor_new(Instruction *instructions, size_t length)
 void executor_free(Executor *executor)
 {
     evalstack_free(&executor->evalstack);
+    callstack_free(&executor->callstack);
 }
 
-static EvalStackElement add(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_add(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer + right.integer};
 }
 
-static EvalStackElement sub(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_sub(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer - right.integer};
 }
 
-static EvalStackElement mul(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_mul(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer * right.integer};
 }
 
-static EvalStackElement div(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_div(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer / right.integer};
 }
 
-static EvalStackElement eq(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_eq(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = memcmp(&left, &right, sizeof(EvalStackElement)) == 0};
 }
 
-static EvalStackElement ne(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_ne(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = memcmp(&left, &right, sizeof(EvalStackElement)) != 0};
 }
 
-static EvalStackElement lt(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_lt(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer < right.integer};
 }
 
-static EvalStackElement le(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_le(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer <= right.integer};
 }
 
-static EvalStackElement gt(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_gt(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer > right.integer};
 }
 
-static EvalStackElement ge(EvalStackElement left, EvalStackElement right)
+static EvalStackElement op_ge(EvalStackElement left, EvalStackElement right)
 {
     return (EvalStackElement){.integer = left.integer >= right.integer};
 }
 
-static void binary_function(EvalStack *evalstack, EvalStackElement (*op)(EvalStackElement left, EvalStackElement right))
+static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(EvalStackElement left, EvalStackElement right))
 {
     EvalStackElement right = evalstack_top(evalstack);
     evalstack_pop(evalstack);
@@ -172,37 +171,37 @@ bool executor_step(Executor *executor)
         executor_pop_field(executor, &constantpool_get(constpool, inst.operand)->data.field);
         break;
     case ADD:
-        binary_function(evalstack, add);
+        apply_binary_function(evalstack, op_add);
         break;
     case SUB:
-        binary_function(evalstack, sub);
+        apply_binary_function(evalstack, op_sub);
         break;
     case MUL:
-        binary_function(evalstack, mul);
+        apply_binary_function(evalstack, op_mul);
         break;
     case DIV:
-        binary_function(evalstack, div);
+        apply_binary_function(evalstack, op_div);
         break;
     case JUMP:
         evalstack_push(evalstack, (EvalStackElement){.integer = 1});
         break;
     case JUMP_EQ:
-        binary_function(evalstack, eq);
+        apply_binary_function(evalstack, op_eq);
         break;
     case JUMP_NE:
-        binary_function(evalstack, ne);
+        apply_binary_function(evalstack, op_ne);
         break;
     case JUMP_LT:
-        binary_function(evalstack, lt);
+        apply_binary_function(evalstack, op_lt);
         break;
     case JUMP_LE:
-        binary_function(evalstack, le);
+        apply_binary_function(evalstack, op_le);
         break;
     case JUMP_GT:
-        binary_function(evalstack, gt);
+        apply_binary_function(evalstack, op_gt);
         break;
     case JUMP_GE:
-        binary_function(evalstack, ge);
+        apply_binary_function(evalstack, op_ge);
         break;
     case CALL:
         executor_call_method(executor, &constantpool_get(constpool, inst.operand)->data.method);

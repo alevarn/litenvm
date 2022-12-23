@@ -10,13 +10,13 @@
 
 typedef struct
 {
+        ConstantPool constpool;
     InstructionStream stream;
     EvalStack evalstack;
     CallStack callstack;
-    ConstantPool constpool;
 } Executor;
 
-Executor executor_new(Instruction *instructions, size_t length);
+Executor executor_new(ConstantPool constpool, InstructionStream inststream);
 
 void executor_free(Executor *executor);
 
@@ -24,8 +24,14 @@ bool executor_step(Executor *executor);
 
 void executor_step_all(Executor *executor);
 
-void executor_call_method(Executor *executor, uint32_t method_address, uint32_t args_count, uint32_t locals_count);
+void executor_call_method(Executor *executor, ConstantPoolEntryMethod *method);
 
 void executor_exit_method(Executor *executor);
+
+void executor_new_object(Executor *executor, ConstantPoolEntryClass *_class);
+
+void executor_push_field(Executor *executor, ConstantPoolEntryField *field);
+
+void executor_pop_field(Executor *executor, ConstantPoolEntryField *field);
 
 #endif

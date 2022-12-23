@@ -7,6 +7,8 @@ set(SRC_FILES
     ${SRC_DIR}/config.c
     ${SRC_DIR}/stack.c
     ${SRC_DIR}/evalstack.c
+    ${SRC_DIR}/callstack.c
+    ${SRC_DIR}/constantpool.c
     ${SRC_DIR}/executor.c
 )
 
