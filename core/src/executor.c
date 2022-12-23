@@ -103,7 +103,7 @@ void executor_exit_method(Executor *executor)
 
     executor->stream.current = frame.return_address;
 
-    config._free(executor->stream.instructions);
+    config._free(frame.vars);
 
     callstack_pop(&executor->callstack);
 }
