@@ -6,12 +6,14 @@
 #include "instruction.h"
 #include "evalstack.h"
 #include "callstack.h"
+#include "constantpool.h"
 
 typedef struct
 {
     InstructionStream stream;
     EvalStack evalstack;
     CallStack callstack;
+    ConstantPool constpool;
 } Executor;
 
 Executor executor_new(Instruction *instructions, size_t length);

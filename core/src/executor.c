@@ -78,22 +78,22 @@ static void binary_function(EvalStack *evalstack, EvalStackElement (*op)(EvalSta
     evalstack_push(evalstack, op(left, right));
 }
 
-void executor_call_method(Executor *executor, uint32_t method_address, uint32_t args_count, uint32_t locals_count)
+void executor_call_method(Executor *executor, ConstantPoolEntryMethod *method)
 {
-    uint32_t vars_count = args_count + locals_count;
+    uint32_t vars_count = method->args + method->locals;
     CallStackFrame frame = {.return_address = executor->stream.current + 1,
                             .vars_count = vars_count,
                             .vars = config._malloc(vars_count * sizeof(EvalStackElement))};
 
     // Load arguments into frame.
-    for (int i = args_count - 1; i >= 0; i--)
+    for (int i = method->args - 1; i >= 0; i--)
     {
         frame.vars[i] = evalstack_top(&executor->evalstack);
         evalstack_pop(&executor->evalstack);
     }
 
     // Update program counter.
-    executor->stream.current = method_address;
+    executor->stream.current = method->address;
 
     callstack_push(&executor->callstack, frame);
 }
@@ -109,12 +109,43 @@ void executor_exit_method(Executor *executor)
     callstack_pop(&executor->callstack);
 }
 
+void executor_new_object(Executor *executor, ConstantPoolEntryClass *_class)
+{
+    EvalStack *evalstack = &executor->evalstack;
+    void *object = config._malloc(_class->fields * sizeof(EvalStackElement));
+    evalstack_push(evalstack, (EvalStackElement){.pointer = object});
+}
+
+static EvalStackElement *get_field(void *object, ConstantPoolEntryField *field)
+{
+    return (EvalStackElement *)((char *)object + field->index * sizeof(EvalStackElement));
+}
+
+void executor_push_field(Executor *executor, ConstantPoolEntryField *field)
+{
+    EvalStack *evalstack = &executor->evalstack;
+    void *object = evalstack_top(evalstack).pointer;
+    evalstack_pop(evalstack);
+    evalstack_push(evalstack, *get_field(object, field));
+}
+
+void executor_pop_field(Executor *executor, ConstantPoolEntryField *field)
+{
+    EvalStack *evalstack = &executor->evalstack;
+    EvalStackElement value = evalstack_top(evalstack);
+    evalstack_pop(evalstack);
+    void *object = evalstack_top(evalstack).pointer;
+    evalstack_pop(evalstack);
+    *get_field(object, field) = value;
+}
+
 bool executor_step(Executor *executor)
 {
     size_t current = executor->stream.current;
     Instruction inst = executor->stream.instructions[current];
     EvalStack *evalstack = &executor->evalstack;
     CallStack *callstack = &executor->callstack;
+    ConstantPool *constpool = &executor->constpool;
 
     switch (inst.opcode)
     {
@@ -128,7 +159,7 @@ bool executor_step(Executor *executor)
         evalstack_push(evalstack, callstack_top(callstack).vars[inst.operand]);
         break;
     case PUSH_FIELD:
-        // Implement
+        executor_push_field(executor, &constantpool_get(constpool, inst.operand)->data.field);
         break;
     case POP:
         evalstack_pop(evalstack);
@@ -138,7 +169,7 @@ bool executor_step(Executor *executor)
         evalstack_pop(evalstack);
         break;
     case POP_FIELD:
-        // Implement
+        executor_pop_field(executor, &constantpool_get(constpool, inst.operand)->data.field);
         break;
     case ADD:
         binary_function(evalstack, add);
@@ -174,7 +205,7 @@ bool executor_step(Executor *executor)
         binary_function(evalstack, ge);
         break;
     case CALL:
-        // Implement
+        executor_call_method(executor, &constantpool_get(constpool, inst.operand)->data.method);
         break;
     case RETURN:
         executor_exit_method(executor);
@@ -184,8 +215,9 @@ bool executor_step(Executor *executor)
         {
             return false;
         }
+        break;
     case NEW:
-        // Implement
+        executor_new_object(executor, &constantpool_get(constpool, inst.operand)->data._class);
         break;
     case DUP:
         evalstack_push(evalstack, evalstack_top(evalstack));

@@ -6,18 +6,18 @@ ConstantPool constantpool_new(uint32_t length)
     return (ConstantPool){.length = length, .entries = config._malloc(length * sizeof(ConstantPoolEntry))};
 }
 
-void constantpool_free(ConstantPool *pool)
+void constantpool_free(ConstantPool *constpool)
 {
-    config._free(pool->entries);
-    pool->entries = NULL;
+    config._free(constpool->entries);
+    constpool->entries = NULL;
 }
 
-void constantpool_add(ConstantPool *pool, uint32_t index, ConstantPoolEntry entry)
+void constantpool_add(ConstantPool *constpool, uint32_t index, ConstantPoolEntry entry)
 {
-    pool->entries[index] = entry;
+    constpool->entries[index] = entry;
 }
 
-ConstantPoolEntry *constantpool_get(ConstantPool *pool, uint32_t index)
+ConstantPoolEntry *constantpool_get(ConstantPool *constpool, uint32_t index)
 {
-    return &pool->entries[index];
+    return &constpool->entries[index];
 }

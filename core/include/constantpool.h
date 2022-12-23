@@ -19,6 +19,7 @@ typedef struct
 {
     const char *name;
     uint32_t _class;
+    uint32_t index;
 } ConstantPoolEntryField;
 
 typedef struct
@@ -49,10 +50,10 @@ typedef struct
 
 ConstantPool constantpool_new(uint32_t length);
 
-void constantpool_free(ConstantPool *pool);
+void constantpool_free(ConstantPool *constpool);
 
-void constantpool_add(ConstantPool *pool, uint32_t index, ConstantPoolEntry entry);
+void constantpool_add(ConstantPool *constpool, uint32_t index, ConstantPoolEntry entry);
 
-ConstantPoolEntry *constantpool_get(ConstantPool *pool, uint32_t index);
+ConstantPoolEntry *constantpool_get(ConstantPool *constpool, uint32_t index);
 
 #endif
