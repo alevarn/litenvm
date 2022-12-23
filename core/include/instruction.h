@@ -2,40 +2,50 @@
 #define INSTRUCTION_H
 
 #include <stdint.h>
+#include <stddef.h>
 
-#define PUSH 0
-#define PUSH_CONST 1
-#define PUSH_VAR 2
-#define PUSH_FIELD 3
+#define JUMP_BIT 0x80
 
-#define POP 4
-#define POP_VAR 5
-#define POP_FIELD 6
+#define PUSH 0x0
+#define PUSH_CONST 0x1
+#define PUSH_VAR 0x2
+#define PUSH_FIELD 0x3
 
-#define ADD 7
-#define SUB 8
-#define MUL 9
-#define DIV 10
+#define POP 0x4
+#define POP_VAR 0x5
+#define POP_FIELD 0x6
 
-#define JUMP 11
-#define JUMP_EQ 12
-#define JUMP_NE 13
-#define JUMP_LT 14
-#define JUMP_LE 15
-#define JUMP_GT 16
-#define JUMP_GE 17
+#define ADD 0x7
+#define SUB 0x8
+#define MUL 0x9
+#define DIV 0xA
 
-#define CALL 18
-#define RETURN 19
+#define CALL 0xB
+#define RETURN 0xC
 
-#define NEW 20
+#define NEW 0xD
 
-#define DUP 21
+#define DUP 0xE
+
+#define JUMP 0x80
+#define JUMP_EQ 0x81
+#define JUMP_NE 0x82
+#define JUMP_LT 0x83
+#define JUMP_LE 0x84
+#define JUMP_GT 0x85
+#define JUMP_GE 0x86
 
 typedef struct
 {
     uint8_t opcode;
     uint32_t operand;
 } Instruction;
+
+typedef struct
+{
+    size_t length;
+    size_t current;
+    Instruction *instructions;
+} InstructionStream;
 
 #endif
