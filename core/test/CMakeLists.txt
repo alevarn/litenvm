@@ -8,3 +8,9 @@ add_test(NAME "Stack test" COMMAND stacktest)
 
 add_executable(evalstacktest evalstack_test.c)
 add_test(NAME "EvalStack test" COMMAND evalstacktest)
+
+add_executable(callstacktest callstack_test.c)
+add_test(NAME "CallStack test" COMMAND callstacktest)
+
+add_executable(constantpooltest constantpool_test.c)
+add_test(NAME "ConstantPool test" COMMAND constantpooltest)

@@ -14,10 +14,10 @@ void constantpool_free(ConstantPool *constpool)
 
 void constantpool_add(ConstantPool *constpool, uint32_t index, ConstantPoolEntry entry)
 {
-    constpool->entries[index] = entry;
+    constpool->entries[index - 1] = entry;
 }
 
 ConstantPoolEntry *constantpool_get(ConstantPool *constpool, uint32_t index)
 {
-    return &constpool->entries[index];
+    return &constpool->entries[index - 1];
 }

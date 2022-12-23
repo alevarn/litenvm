@@ -2,7 +2,7 @@
 
 CallStack callstack_new()
 {
-    stack_new(sizeof(CallStackFrame));
+    return stack_new(sizeof(CallStackFrame));
 }
 
 void callstack_free(CallStack *callstack)

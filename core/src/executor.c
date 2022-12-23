@@ -108,16 +108,17 @@ void executor_exit_method(Executor *executor)
     callstack_pop(&executor->callstack);
 }
 
-void executor_new_object(Executor *executor, ConstantPoolEntryClass *_class)
+void executor_new_object(Executor *executor, uint32_t pool_index, ConstantPoolEntryClass *_class)
 {
     EvalStack *evalstack = &executor->evalstack;
-    void *object = config._malloc(_class->fields * sizeof(EvalStackElement));
+    void *object = config._malloc(sizeof(uint32_t) + _class->fields * sizeof(EvalStackElement));
+    *(uint32_t *)object = pool_index;
     evalstack_push(evalstack, (EvalStackElement){.pointer = object});
 }
 
 static EvalStackElement *get_field(void *object, ConstantPoolEntryField *field)
 {
-    return (EvalStackElement *)((char *)object + field->index * sizeof(EvalStackElement));
+    return (EvalStackElement *)((char *)object + sizeof(uint32_t) + field->index * sizeof(EvalStackElement));
 }
 
 void executor_push_field(Executor *executor, ConstantPoolEntryField *field)
@@ -216,7 +217,7 @@ bool executor_step(Executor *executor)
         }
         break;
     case NEW:
-        executor_new_object(executor, &constantpool_get(constpool, inst.operand)->data._class);
+        executor_new_object(executor, inst.operand, &constantpool_get(constpool, inst.operand)->data._class);
         break;
     case DUP:
         evalstack_push(evalstack, evalstack_top(evalstack));
