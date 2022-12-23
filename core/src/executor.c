@@ -224,10 +224,19 @@ bool executor_step(Executor *executor)
         break;
     }
 
-    if (inst.opcode & JUMP_BIT && evalstack_top(evalstack).integer)
+    if (inst.opcode & JUMP_BIT)
     {
+        int32_t jump = evalstack_top(evalstack).integer;
         evalstack_pop(evalstack);
-        executor->stream.current = inst.operand;
+
+        if (jump)
+        {
+            executor->stream.current = inst.operand;
+        }
+        else
+        {
+            executor->stream.current++;
+        }
     }
     else if (inst.opcode != CALL && inst.opcode != RETURN)
     {

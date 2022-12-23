@@ -186,6 +186,49 @@ void executor_jump_no_effect_test(void **state)
     assert_false(executor_step(executor)); // RETURN
 }
 
+void executor_jump_eq_true_test(void **state)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 50};
+    instructions[3] = (Instruction){.opcode = JUMP_EQ, .operand = 6};
+    instructions[4] = (Instruction){.opcode = PUSH, .operand = 0};
+    instructions[5] = (Instruction){.opcode = JUMP, .operand = 7};
+    instructions[6] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[7] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // PUSH 50
+    assert_true(executor_step(executor)); // PUSH 50
+    assert_true(executor_step(executor)); // JUMP_EQ 6
+    assert_true(executor_step(executor)); // PUSH 1
+    assert_int_equal(1, executor->evalstack.length);
+    assert_int_equal(1, evalstack_top(&executor->evalstack).integer);
+    assert_false(executor_step(executor)); // RETURN
+}
+
+void executor_jump_eq_false_test(void **state)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 51};
+    instructions[3] = (Instruction){.opcode = JUMP_EQ, .operand = 6};
+    instructions[4] = (Instruction){.opcode = PUSH, .operand = 0};
+    instructions[5] = (Instruction){.opcode = JUMP, .operand = 7};
+    instructions[6] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[7] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // PUSH 50
+    assert_true(executor_step(executor)); // PUSH 51
+    assert_true(executor_step(executor)); // JUMP_EQ 6
+    assert_true(executor_step(executor)); // PUSH 0
+    assert_int_equal(1, executor->evalstack.length);
+    assert_int_equal(0, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor));  // JUMP 7
+    assert_false(executor_step(executor)); // RETURN
+}
+
 int main()
 {
     set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -201,6 +244,8 @@ int main()
             cmocka_unit_test_setup_teardown(executor_div_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_skip_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_no_effect_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_jump_eq_true_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_jump_eq_false_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
