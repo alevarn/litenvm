@@ -67,88 +67,50 @@ void executor_push_test(void **state)
     assert_false(executor_step(executor)); // RETURN
 }
 
-void executor_add_test(void **state)
+void executor_arithmetic_test(void **state, int32_t first, int32_t second, uint8_t arithemtic_type, int32_t result)
 {
     Executor *executor = *state;
     Instruction *instructions = executor->stream.instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[3] = (Instruction){.opcode = ADD, .operand = 0};
+    instructions[1] = (Instruction){.opcode = PUSH, .operand = first};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = second};
+    instructions[3] = (Instruction){.opcode = arithemtic_type, .operand = 0};
     instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // PUSH 50
+    assert_true(executor_step(executor)); // PUSH first
     assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(50, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // PUSH 25
+    assert_int_equal(first, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // PUSH second
     assert_int_equal(2, executor->evalstack.length);
-    assert_int_equal(25, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // ADD
+    assert_int_equal(second, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // arithemtic_type (ADD, SUB, MUL or DIV)
     assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(75, evalstack_top(&executor->evalstack).integer);
+    assert_int_equal(result, evalstack_top(&executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+}
+
+void executor_add_test(void **state)
+{
+    executor_arithmetic_test(state, 50, 25, ADD, 75);
 }
 
 void executor_sub_test(void **state)
 {
-    Executor *executor = *state;
-    Instruction *instructions = executor->stream.instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[3] = (Instruction){.opcode = SUB, .operand = 0};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
-    assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // PUSH 50
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(50, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // PUSH 25
-    assert_int_equal(2, executor->evalstack.length);
-    assert_int_equal(25, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // SUB
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(25, evalstack_top(&executor->evalstack).integer);
-    assert_false(executor_step(executor)); // RETURN
+    executor_arithmetic_test(state, 50, 25, SUB, 25);
+}
+
+void executor_sub_negative_result_test(void **state)
+{
+    executor_arithmetic_test(state, 50, 75, SUB, -25);
 }
 
 void executor_mul_test(void **state)
 {
-    Executor *executor = *state;
-    Instruction *instructions = executor->stream.instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[3] = (Instruction){.opcode = MUL, .operand = 0};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
-    assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // PUSH 50
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(50, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // PUSH 25
-    assert_int_equal(2, executor->evalstack.length);
-    assert_int_equal(25, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // MUL
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(1250, evalstack_top(&executor->evalstack).integer);
-    assert_false(executor_step(executor)); // RETURN
+    executor_arithmetic_test(state, 50, 25, MUL, 1250);
 }
 
 void executor_div_test(void **state)
 {
-    Executor *executor = *state;
-    Instruction *instructions = executor->stream.instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[3] = (Instruction){.opcode = DIV, .operand = 0};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
-    assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // PUSH 50
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(50, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // PUSH 25
-    assert_int_equal(2, executor->evalstack.length);
-    assert_int_equal(25, evalstack_top(&executor->evalstack).integer);
-    assert_true(executor_step(executor)); // DIV
-    assert_int_equal(1, executor->evalstack.length);
-    assert_int_equal(2, evalstack_top(&executor->evalstack).integer);
-    assert_false(executor_step(executor)); // RETURN
+    executor_arithmetic_test(state, 50, 25, DIV, 2);
 }
 
 void executor_jump_skip_test(void **state)
@@ -320,6 +282,7 @@ int main()
             cmocka_unit_test_setup_teardown(executor_push_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_add_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_sub_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_sub_negative_result_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_mul_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_div_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_skip_test, executor_with_main_method_setup, executor_with_main_method_teardown),
