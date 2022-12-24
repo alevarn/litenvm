@@ -287,6 +287,23 @@ void executor_jump_ge_false_lt_test(void **state)
     executor_cond_jump_false_test(state, 50, 51, JUMP_GE);
 }
 
+void executor_dup_test(void **state)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    instructions[1] = (Instruction){.opcode = PUSH, .operand = 123};
+    instructions[2] = (Instruction){.opcode = DUP, .operand = 0};
+    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // PUSH 123
+    assert_int_equal(1, executor->evalstack.length);
+    assert_int_equal(123, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // DUP
+    assert_int_equal(2, executor->evalstack.length);
+    assert_int_equal(123, evalstack_top(&executor->evalstack).integer);
+    assert_false(executor_step(executor)); // RETURN
+}
+
 int main()
 {
     set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -316,6 +333,7 @@ int main()
             cmocka_unit_test_setup_teardown(executor_jump_gt_true_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_gt_false_eq_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_gt_false_lt_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_dup_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
