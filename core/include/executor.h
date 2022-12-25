@@ -10,7 +10,7 @@
 
 typedef struct
 {
-        ConstantPool constpool;
+    ConstantPool constpool;
     InstructionStream stream;
     EvalStack evalstack;
     CallStack callstack;
