@@ -16,8 +16,12 @@ void executor_new_test(void **state)
 
 static int executor_with_main_method_setup(void **state)
 {
-    ConstantPool constpool = constantpool_new(1);
+    ConstantPool constpool = constantpool_new(5);
     constantpool_add(&constpool, 1, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 0, .address = 1, .args = 0, .locals = 0}});
+    constantpool_add(&constpool, 2, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0}});
+    constantpool_add(&constpool, 3, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 0}});
+    constantpool_add(&constpool, 4, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "y", ._class = 2, .index = 1}});
+    constantpool_add(&constpool, 5, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 2}});
     // Should be enough instruction space to perform all the tests we want in just a single main method without args/locals.
     uint32_t instructions_length = 100;
     Instruction *instructions = config._malloc(instructions_length * sizeof(Instruction));
@@ -304,6 +308,79 @@ void executor_dup_test(void **state)
     assert_false(executor_step(executor)); // RETURN
 }
 
+void executor_new_object_test(void **state)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    instructions[1] = (Instruction){.opcode = NEW, .operand = 2};
+    instructions[2] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW 2
+    assert_int_equal(1, executor->evalstack.length);
+    assert_int_equal(2, *(uint32_t *)evalstack_top(&executor->evalstack).pointer);
+    // Free the allocated object.
+    config._free(evalstack_top(&executor->evalstack).pointer);
+    assert_false(executor_step(executor)); // RETURN
+}
+
+void executor_push_and_pop_fields_test(void **state)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    instructions[1] = (Instruction){.opcode = NEW, .operand = 2};
+    for (int i = 2; i < 7; i++)
+    {
+        instructions[i] = (Instruction){.opcode = DUP, .operand = 0};
+    }
+    instructions[7] = (Instruction){.opcode = PUSH, .operand = 100};
+    instructions[8] = (Instruction){.opcode = POP_FIELD, .operand = 3};
+    instructions[9] = (Instruction){.opcode = PUSH, .operand = 200};
+    instructions[10] = (Instruction){.opcode = POP_FIELD, .operand = 4};
+    instructions[11] = (Instruction){.opcode = PUSH, .operand = 300};
+    instructions[12] = (Instruction){.opcode = POP_FIELD, .operand = 5};
+    instructions[13] = (Instruction){.opcode = PUSH_FIELD, .operand = 3};
+    instructions[14] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[15] = (Instruction){.opcode = PUSH_FIELD, .operand = 4};
+    instructions[16] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[17] = (Instruction){.opcode = PUSH_FIELD, .operand = 5};
+    instructions[18] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[19] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW 2
+    void *object = evalstack_top(&executor->evalstack).pointer;
+
+    for (int i = 2; i < 7; i++)
+    {
+        assert_true(executor_step(executor)); // DUP
+    }
+
+    assert_true(executor_step(executor)); // PUSH 100
+    assert_true(executor_step(executor)); // POP_FIELD 3
+    assert_true(executor_step(executor)); // PUSH 200
+    assert_true(executor_step(executor)); // POP_FIELD 4
+    assert_true(executor_step(executor)); // PUSH 300
+    assert_true(executor_step(executor)); // POP_FIELD 5
+
+    assert_true(executor_step(executor)); // PUSH_FIELD 3
+    assert_int_equal(100, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // POP
+
+    assert_true(executor_step(executor)); // PUSH_FIELD 4
+    assert_int_equal(200, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // POP
+
+    assert_true(executor_step(executor)); // PUSH_FIELD 5
+    assert_int_equal(300, evalstack_top(&executor->evalstack).integer);
+    assert_true(executor_step(executor)); // POP
+
+    assert_int_equal(0, executor->evalstack.length);
+
+    // Free the allocated object.
+    config._free(object);
+
+    assert_false(executor_step(executor)); // RETURN
+}
+
 int main()
 {
     set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -334,6 +411,8 @@ int main()
             cmocka_unit_test_setup_teardown(executor_jump_gt_false_eq_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_jump_gt_false_lt_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_dup_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_new_object_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_push_and_pop_fields_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
