@@ -3,7 +3,7 @@
 #include "config.h"
 #include "executor.h"
 
-#define STACK_INITIAL_CAPACITY 8
+#define STACK_INITIAL_CAPACITY 16
 
 void executor_new_test(void **state)
 {
@@ -16,7 +16,7 @@ void executor_new_test(void **state)
 
 static int executor_with_main_method_setup(void **state)
 {
-    ConstantPool constpool = constantpool_new(7);
+    ConstantPool constpool = constantpool_new(9);
     constantpool_add(&constpool, 1, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 0, .address = 1, .args = 0, .locals = 1}});
     constantpool_add(&constpool, 2, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0}});
     constantpool_add(&constpool, 3, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 0}});
@@ -24,6 +24,8 @@ static int executor_with_main_method_setup(void **state)
     constantpool_add(&constpool, 5, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 2}});
     constantpool_add(&constpool, 6, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Math", .fields = 0, .methods = 1, .parent = 0}});
     constantpool_add(&constpool, 7, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 6, .address = 30, .args = 3, .locals = 0}});
+    constantpool_add(&constpool, 8, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0}});
+    constantpool_add(&constpool, 9, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 8, .address = 30, .args = 2, .locals = 0}});
     // Should be enough instruction space to perform all the tests we want in just a single main method without args/locals.
     uint32_t instructions_length = 100;
     Instruction *instructions = config._malloc(instructions_length * sizeof(Instruction));
@@ -459,6 +461,93 @@ void executor_call_max_gt_test(void **state)
     executor_call_max_test(state, 20, 10);
 }
 
+void executor_call_fac_test(void **state, int32_t n, int32_t fac_of_n)
+{
+    Executor *executor = *state;
+    Instruction *instructions = executor->stream.instructions;
+    // <main> function.
+    instructions[1] = (Instruction){.opcode = NEW, .operand = 8};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = n};
+    instructions[3] = (Instruction){.opcode = CALL, .operand = 9};
+    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+
+    // Factorial.fac(n) function.
+    instructions[30] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
+    instructions[31] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[32] = (Instruction){.opcode = JUMP_GT, .operand = 35};
+
+    // if n <= 1
+    instructions[33] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[34] = (Instruction){.opcode = RETURN, .operand = 0};
+
+    // if n > 1
+    instructions[35] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
+    instructions[36] = (Instruction){.opcode = PUSH_VAR, .operand = 0};
+    instructions[37] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
+    instructions[38] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[39] = (Instruction){.opcode = SUB, .operand = 0};
+    instructions[40] = (Instruction){.opcode = CALL, .operand = 9};
+    instructions[41] = (Instruction){.opcode = MUL, .operand = 0};
+    instructions[42] = (Instruction){.opcode = RETURN, .operand = 0};
+
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW 8
+    void *object = evalstack_top(&executor->evalstack).pointer;
+
+    executor_step_all(executor);
+
+    assert_int_equal(1, executor->evalstack.length);
+    assert_int_equal(fac_of_n, evalstack_top(&executor->evalstack).integer);
+
+    // Free the allocated object.
+    config._free(object);
+}
+
+void executor_call_fac_0_test(void **state)
+{
+    executor_call_fac_test(state, 0, 1);
+}
+
+void executor_call_fac_1_test(void **state)
+{
+    executor_call_fac_test(state, 1, 1);
+}
+
+void executor_call_fac_2_test(void **state)
+{
+    executor_call_fac_test(state, 2, 2);
+}
+
+void executor_call_fac_3_test(void **state)
+{
+    executor_call_fac_test(state, 3, 6);
+}
+
+void executor_call_fac_4_test(void **state)
+{
+    executor_call_fac_test(state, 4, 24);
+}
+
+void executor_call_fac_5_test(void **state)
+{
+    executor_call_fac_test(state, 5, 120);
+}
+
+void executor_call_fac_6_test(void **state)
+{
+    executor_call_fac_test(state, 6, 720);
+}
+
+void executor_call_fac_7_test(void **state)
+{
+    executor_call_fac_test(state, 7, 5040);
+}
+
+void executor_call_fac_8_test(void **state)
+{
+    executor_call_fac_test(state, 8, 40320);
+}
+
 int main()
 {
     set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -499,6 +588,15 @@ int main()
             cmocka_unit_test_setup_teardown(executor_call_max_lt_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_call_max_eq_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_call_max_gt_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_0_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_1_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_2_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_3_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_4_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_5_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_6_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_7_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_fac_8_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

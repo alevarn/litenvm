@@ -24,14 +24,4 @@ bool executor_step(Executor *executor);
 
 void executor_step_all(Executor *executor);
 
-void executor_call_method(Executor *executor, ConstantPoolEntryMethod *method);
-
-void executor_exit_method(Executor *executor);
-
-void executor_new_object(Executor *executor, uint32_t pool_index, ConstantPoolEntryClass *_class);
-
-void executor_push_field(Executor *executor, ConstantPoolEntryField *field);
-
-void executor_pop_field(Executor *executor, ConstantPoolEntryField *field);
-
 #endif

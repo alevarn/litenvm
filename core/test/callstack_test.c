@@ -32,6 +32,30 @@ void callstack_single_push_pop_test(void **state)
     callstack_free(&callstack);
 }
 
+void callstack_multiple_push_pop_test(void **state)
+{
+    CallStack callstack = callstack_new();
+
+    for (int i = 0; i <= 500; i++)
+    {
+        assert_int_equal(i, callstack.length);
+        callstack_push(&callstack, (CallStackFrame){.return_address = i, .vars_count = 0, .vars = NULL});
+    }
+
+    assert_int_equal(512, callstack.capacity);
+
+    for (int i = 500; i >= 0; i--)
+    {
+        assert_int_equal(i, callstack_top(&callstack).return_address);
+        callstack_pop(&callstack);
+        assert_int_equal(i, callstack.length);
+    }
+
+    assert_int_equal(STACK_INITIAL_CAPACITY, callstack.capacity);
+
+    callstack_free(&callstack);
+}
+
 int main()
 {
     set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -40,6 +64,7 @@ int main()
         {
             cmocka_unit_test(callstack_new_test),
             cmocka_unit_test(callstack_single_push_pop_test),
+            cmocka_unit_test(callstack_multiple_push_pop_test),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
