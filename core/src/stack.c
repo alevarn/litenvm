@@ -51,7 +51,7 @@ void stack_pop(Stack *stack)
 {
     stack->length--;
 
-    if (stack->length >= config.min_stack_capacity / 2 && stack->length == stack->capacity / 4)
+    if (stack->length > 0 && stack->length >= config.min_stack_capacity / 2 && stack->length == stack->capacity / 4)
     {
         resize(stack, stack->capacity / 2);
     }
