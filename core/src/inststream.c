@@ -7,6 +7,7 @@ InstructionStream *inststream_new(uint32_t length)
     inststream->length = length;
     inststream->current = 0;
     inststream->instructions = (Instruction *)config._malloc(length * sizeof(Instruction));
+    return inststream;
 }
 
 void inststream_free(InstructionStream *inststream)
