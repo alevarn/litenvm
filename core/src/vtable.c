@@ -86,10 +86,11 @@ uint32_t vtable_hash(VTable *vtable, const char *str)
     uint32_t n = strlen(str);
 
     // Algorithm from: Java's String hashcode().
-    for (char *c = str; *c != '\0'; c++)
+    while (*str != '\0')
     {
-        hash += *c * powl(31, n - 1);
+        hash += *str * powl(31, n - 1);
         n--;
+        str++;
     }
 
     return hash % vtable->length;
