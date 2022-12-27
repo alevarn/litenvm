@@ -41,11 +41,4 @@ typedef struct
     uint32_t operand;
 } Instruction;
 
-typedef struct
-{
-    size_t length;
-    size_t current;
-    Instruction *instructions;
-} InstructionStream;
-
 #endif

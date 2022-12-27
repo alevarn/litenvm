@@ -48,7 +48,7 @@ typedef struct
     ConstantPoolEntry *entries;
 } ConstantPool;
 
-ConstantPool constantpool_new(uint32_t length);
+ConstantPool *constantpool_new(uint32_t length);
 
 void constantpool_free(ConstantPool *constpool);
 

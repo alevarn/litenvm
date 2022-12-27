@@ -12,7 +12,7 @@ typedef struct
     uint32_t return_address;
 } CallStackFrame;
 
-CallStack callstack_new();
+CallStack *callstack_new();
 
 void callstack_free(CallStack *callstack);
 

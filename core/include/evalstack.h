@@ -13,7 +13,7 @@ typedef union
     void *pointer;
 } EvalStackElement;
 
-EvalStack evalstack_new();
+EvalStack *evalstack_new();
 
 void evalstack_free(EvalStack *evalstack);
 
