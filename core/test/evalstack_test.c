@@ -7,51 +7,51 @@
 
 void evalstack_new_test(void **state)
 {
-    EvalStack evalstack = evalstack_new();
-    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack.capacity);
-    assert_int_equal(0, evalstack.length);
-    assert_int_equal(sizeof(EvalStackElement), evalstack.elemsize);
-    evalstack_free(&evalstack);
+    EvalStack *evalstack = evalstack_new();
+    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack->capacity);
+    assert_int_equal(0, evalstack->length);
+    assert_int_equal(sizeof(EvalStackElement), evalstack->elemsize);
+    evalstack_free(evalstack);
 }
 
 void evalstack_single_push_pop_test(void **state)
 {
-    EvalStack evalstack = evalstack_new();
+    EvalStack *evalstack = evalstack_new();
     EvalStackElement element = {.integer = 100};
-    evalstack_push(&evalstack, element);
-    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack.capacity);
-    assert_int_equal(1, evalstack.length);
-    assert_int_equal(sizeof(EvalStackElement), evalstack.elemsize);
-    assert_int_equal(100, evalstack_top(&evalstack).integer);
-    evalstack_pop(&evalstack);
-    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack.capacity);
-    assert_int_equal(0, evalstack.length);
-    assert_int_equal(sizeof(EvalStackElement), evalstack.elemsize);
-    evalstack_free(&evalstack);
+    evalstack_push(evalstack, element);
+    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack->capacity);
+    assert_int_equal(1, evalstack->length);
+    assert_int_equal(sizeof(EvalStackElement), evalstack->elemsize);
+    assert_int_equal(100, evalstack_top(evalstack).integer);
+    evalstack_pop(evalstack);
+    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack->capacity);
+    assert_int_equal(0, evalstack->length);
+    assert_int_equal(sizeof(EvalStackElement), evalstack->elemsize);
+    evalstack_free(evalstack);
 }
 
 void evalstack_multiple_push_pop_test(void **state)
 {
-    EvalStack evalstack = evalstack_new();
+    EvalStack *evalstack = evalstack_new();
 
     for (int i = 0; i <= 500; i++)
     {
-        assert_int_equal(i, evalstack.length);
-        evalstack_push(&evalstack, (EvalStackElement){.integer = i});
+        assert_int_equal(i, evalstack->length);
+        evalstack_push(evalstack, (EvalStackElement){.integer = i});
     }
 
-    assert_int_equal(512, evalstack.capacity);
+    assert_int_equal(512, evalstack->capacity);
 
     for (int i = 500; i >= 0; i--)
     {
-        assert_int_equal(i, evalstack_top(&evalstack).integer);
-        evalstack_pop(&evalstack);
-        assert_int_equal(i, evalstack.length);
+        assert_int_equal(i, evalstack_top(evalstack).integer);
+        evalstack_pop(evalstack);
+        assert_int_equal(i, evalstack->length);
     }
 
-    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack.capacity);
+    assert_int_equal(STACK_INITIAL_CAPACITY, evalstack->capacity);
 
-    evalstack_free(&evalstack);
+    evalstack_free(evalstack);
 }
 
 int main()

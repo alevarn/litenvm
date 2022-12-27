@@ -11,7 +11,7 @@ typedef struct
     void *elements;
 } Stack;
 
-Stack stack_new(size_t elemsize);
+Stack *stack_new(size_t elemsize);
 
 void stack_free(Stack *stack);
 

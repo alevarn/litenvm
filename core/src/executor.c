@@ -3,19 +3,23 @@
 #include "config.h"
 #include "executor.h"
 
-Executor executor_new(ConstantPool constpool, InstructionStream inststream)
+Executor *executor_new(ConstantPool *constpool, InstructionStream *inststream)
 {
-    return (Executor){
-        .constpool = constpool,
-        .stream = inststream,
-        .evalstack = evalstack_new(),
-        .callstack = callstack_new()};
+    Executor *executor = (Executor *)config._malloc(sizeof(Executor));
+    executor->constpool = constpool;
+    executor->inststream = inststream;
+    executor->evalstack = evalstack_new(),
+    executor->callstack = callstack_new();
+    return executor;
 }
 
 void executor_free(Executor *executor)
 {
-    evalstack_free(&executor->evalstack);
-    callstack_free(&executor->callstack);
+    evalstack_free(executor->evalstack);
+    executor->evalstack = NULL;
+    callstack_free(executor->callstack);
+    executor->callstack = NULL;
+    config._free(executor);
 }
 
 static EvalStackElement op_add(EvalStackElement left, EvalStackElement right)
@@ -80,37 +84,37 @@ static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(E
 static void call_method(Executor *executor, ConstantPoolEntryMethod *method)
 {
     uint32_t vars_count = method->args + method->locals;
-    CallStackFrame frame = {.return_address = executor->stream.current + 1,
+    CallStackFrame frame = {.return_address = executor->inststream->current + 1,
                             .vars_count = vars_count,
                             .vars = config._malloc(vars_count * sizeof(EvalStackElement))};
 
     // Load arguments into frame.
     for (int i = method->args - 1; i >= 0; i--)
     {
-        frame.vars[i] = evalstack_top(&executor->evalstack);
-        evalstack_pop(&executor->evalstack);
+        frame.vars[i] = evalstack_top(executor->evalstack);
+        evalstack_pop(executor->evalstack);
     }
 
     // Update program counter.
-    executor->stream.current = method->address;
+    executor->inststream->current = method->address;
 
-    callstack_push(&executor->callstack, frame);
+    callstack_push(executor->callstack, frame);
 }
 
 static void exit_method(Executor *executor)
 {
-    CallStackFrame frame = callstack_top(&executor->callstack);
+    CallStackFrame frame = callstack_top(executor->callstack);
 
-    executor->stream.current = frame.return_address;
+    executor->inststream->current = frame.return_address;
 
     config._free(frame.vars);
 
-    callstack_pop(&executor->callstack);
+    callstack_pop(executor->callstack);
 }
 
 static void new_object(Executor *executor, uint32_t pool_index, ConstantPoolEntryClass *_class)
 {
-    EvalStack *evalstack = &executor->evalstack;
+    EvalStack *evalstack = executor->evalstack;
     void *object = config._malloc(sizeof(uint32_t) + _class->fields * sizeof(EvalStackElement));
     *(uint32_t *)object = pool_index;
     evalstack_push(evalstack, (EvalStackElement){.pointer = object});
@@ -123,7 +127,7 @@ static EvalStackElement *get_field(void *object, ConstantPoolEntryField *field)
 
 static void push_field(Executor *executor, ConstantPoolEntryField *field)
 {
-    EvalStack *evalstack = &executor->evalstack;
+    EvalStack *evalstack = executor->evalstack;
     void *object = evalstack_top(evalstack).pointer;
     evalstack_pop(evalstack);
     evalstack_push(evalstack, *get_field(object, field));
@@ -131,7 +135,7 @@ static void push_field(Executor *executor, ConstantPoolEntryField *field)
 
 static void pop_field(Executor *executor, ConstantPoolEntryField *field)
 {
-    EvalStack *evalstack = &executor->evalstack;
+    EvalStack *evalstack = executor->evalstack;
     EvalStackElement value = evalstack_top(evalstack);
     evalstack_pop(evalstack);
     void *object = evalstack_top(evalstack).pointer;
@@ -141,11 +145,11 @@ static void pop_field(Executor *executor, ConstantPoolEntryField *field)
 
 bool executor_step(Executor *executor)
 {
-    size_t current = executor->stream.current;
-    Instruction inst = executor->stream.instructions[current];
-    EvalStack *evalstack = &executor->evalstack;
-    CallStack *callstack = &executor->callstack;
-    ConstantPool *constpool = &executor->constpool;
+    size_t current = executor->inststream->current;
+    Instruction inst = executor->inststream->instructions[current];
+    EvalStack *evalstack = executor->evalstack;
+    CallStack *callstack = executor->callstack;
+    ConstantPool *constpool = executor->constpool;
 
     switch (inst.opcode)
     {
@@ -231,16 +235,16 @@ bool executor_step(Executor *executor)
 
         if (jump)
         {
-            executor->stream.current = inst.operand;
+            executor->inststream->current = inst.operand;
         }
         else
         {
-            executor->stream.current++;
+            executor->inststream->current++;
         }
     }
     else if (inst.opcode != CALL && inst.opcode != RETURN)
     {
-        executor->stream.current++;
+        executor->inststream->current++;
     }
 
     return true;

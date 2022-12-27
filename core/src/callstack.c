@@ -1,6 +1,6 @@
 #include "callstack.h"
 
-CallStack callstack_new()
+CallStack *callstack_new()
 {
     return stack_new(sizeof(CallStackFrame));
 }

@@ -1,6 +1,6 @@
 #include "evalstack.h"
 
-EvalStack evalstack_new()
+EvalStack *evalstack_new()
 {
     return stack_new(sizeof(EvalStackElement));
 }
