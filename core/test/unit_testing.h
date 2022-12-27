@@ -11,6 +11,11 @@ void *test_malloc_func(size_t size)
     return test_malloc(size);
 }
 
+void *test_calloc_func(size_t nitems, size_t size)
+{
+    return test_calloc(nitems, size);
+}
+
 void *test_realloc_func(void *block, size_t size)
 {
     return test_realloc(block, size);
