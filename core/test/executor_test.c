@@ -23,20 +23,22 @@ void executor_new_test(void **state)
 
 static int executor_with_main_method_setup(void **state)
 {
-    ConstantPool *constpool = constantpool_new(9);
-    constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 0, .address = 1, .args = 0, .locals = 1}});
-    constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0, .vtable = NULL}});
-    constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 0}});
-    constantpool_add(constpool, 4, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "y", ._class = 2, .index = 1}});
-    constantpool_add(constpool, 5, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 2}});
-    constantpool_add(constpool, 6, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Math", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
-    constantpool_add(constpool, 7, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 6, .address = 30, .args = 3, .locals = 0}});
-    constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
-    constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 8, .address = 30, .args = 2, .locals = 0}});
+    ConstantPool *constpool = constantpool_new(10);
+    constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "<Main>", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 1, .address = 2, .args = 1, .locals = 1}});
+    constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 4, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 3, .index = 0}});
+    constantpool_add(constpool, 5, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "y", ._class = 3, .index = 1}});
+    constantpool_add(constpool, 6, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 3, .index = 2}});
+    constantpool_add(constpool, 7, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Math", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 7, .address = 30, .args = 3, .locals = 0}});
+    constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 10, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 9, .address = 30, .args = 2, .locals = 0}});
     constantpool_compute_vtables(constpool);
     // Should be enough instruction space to perform all the tests we want.
     InstructionStream *inststream = inststream_new(100);
-    inststream->instructions[0] = (Instruction){.opcode = CALL, .operand = 1};
+    inststream->instructions[0] = (Instruction){.opcode = NEW, .operand = 1};
+    inststream->instructions[1] = (Instruction){.opcode = CALL, .operand = 2};
     CMockaState *cmocka_state = config._malloc(sizeof(CMockaState));
     cmocka_state->constpool = constpool;
     cmocka_state->inststream = inststream;
@@ -58,15 +60,18 @@ void executor_main_method_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = RETURN, .operand = 0};
     assert_int_equal(0, executor->callstack->length);
     assert_int_equal(0, executor->evalstack->length);
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_int_equal(1, executor->callstack->length);
     assert_int_equal(0, executor->evalstack->length);
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(0, executor->callstack->length);
     assert_int_equal(0, executor->evalstack->length);
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -75,13 +80,16 @@ void executor_push_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 123};
-    instructions[2] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 123};
+    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // PUSH 123
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(123, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -90,9 +98,11 @@ void executor_push_and_pop_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 123};
-    instructions[2] = (Instruction){.opcode = POP, .operand = 0};
-    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 123};
+    instructions[3] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // PUSH 123
     assert_int_equal(1, executor->evalstack->length);
@@ -100,6 +110,7 @@ void executor_push_and_pop_test(void **state)
     assert_true(executor_step(executor)); // POP
     assert_int_equal(0, executor->evalstack->length);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -108,10 +119,12 @@ void executor_arithmetic_test(void **state, int32_t first, int32_t second, uint8
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = first};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = second};
-    instructions[3] = (Instruction){.opcode = arithemtic_type, .operand = 0};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = first};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = second};
+    instructions[4] = (Instruction){.opcode = arithemtic_type, .operand = 0};
+    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // PUSH first
     assert_int_equal(1, executor->evalstack->length);
@@ -123,6 +136,7 @@ void executor_arithmetic_test(void **state, int32_t first, int32_t second, uint8
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(result, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -156,16 +170,19 @@ void executor_jump_skip_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = JUMP, .operand = 3};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[3] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = JUMP, .operand = 4};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = 50};
+    instructions[4] = (Instruction){.opcode = PUSH, .operand = 25};
+    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // JUMP 3
+    assert_true(executor_step(executor)); // JUMP 4
     assert_true(executor_step(executor)); // PUSH 25
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(25, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -174,12 +191,14 @@ void executor_jump_no_effect_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = JUMP, .operand = 2};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = 50};
-    instructions[3] = (Instruction){.opcode = PUSH, .operand = 25};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = JUMP, .operand = 3};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = 50};
+    instructions[4] = (Instruction){.opcode = PUSH, .operand = 25};
+    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // JUMP 2
+    assert_true(executor_step(executor)); // JUMP 3
     assert_true(executor_step(executor)); // PUSH 50
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(50, evalstack_top(executor->evalstack).integer);
@@ -187,6 +206,7 @@ void executor_jump_no_effect_test(void **state)
     assert_int_equal(2, executor->evalstack->length);
     assert_int_equal(25, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -195,21 +215,24 @@ void executor_cond_jump_true_test(void **state, int32_t first, int32_t second, u
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = first};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = second};
-    instructions[3] = (Instruction){.opcode = jump_type, .operand = 6};
-    instructions[4] = (Instruction){.opcode = PUSH, .operand = 0};
-    instructions[5] = (Instruction){.opcode = JUMP, .operand = 7};
-    instructions[6] = (Instruction){.opcode = PUSH, .operand = 1};
-    instructions[7] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = first};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = second};
+    instructions[4] = (Instruction){.opcode = jump_type, .operand = 7};
+    instructions[5] = (Instruction){.opcode = PUSH, .operand = 0};
+    instructions[6] = (Instruction){.opcode = JUMP, .operand = 8};
+    instructions[7] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[8] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor));  // CALL <main>
     assert_true(executor_step(executor));  // PUSH first
     assert_true(executor_step(executor));  // PUSH second
-    assert_true(executor_step(executor));  // JUMP_EQ 6
+    assert_true(executor_step(executor));  // JUMP_XX 7
     assert_true(executor_step(executor));  // PUSH 1
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(1, evalstack_top(executor->evalstack).integer);
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -218,22 +241,25 @@ void executor_cond_jump_false_test(void **state, int32_t first, int32_t second, 
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = first};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = second};
-    instructions[3] = (Instruction){.opcode = jump_type, .operand = 6};
-    instructions[4] = (Instruction){.opcode = PUSH, .operand = 0};
-    instructions[5] = (Instruction){.opcode = JUMP, .operand = 7};
-    instructions[6] = (Instruction){.opcode = PUSH, .operand = 1};
-    instructions[7] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = first};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = second};
+    instructions[4] = (Instruction){.opcode = jump_type, .operand = 7};
+    instructions[5] = (Instruction){.opcode = PUSH, .operand = 0};
+    instructions[6] = (Instruction){.opcode = JUMP, .operand = 8};
+    instructions[7] = (Instruction){.opcode = PUSH, .operand = 1};
+    instructions[8] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor));  // CALL <main>
     assert_true(executor_step(executor));  // PUSH first
     assert_true(executor_step(executor));  // PUSH second
-    assert_true(executor_step(executor));  // JUMP_EQ 6
+    assert_true(executor_step(executor));  // JUMP_XX 7
     assert_true(executor_step(executor));  // PUSH 0
-    assert_true(executor_step(executor));  // JUMP 7
+    assert_true(executor_step(executor));  // JUMP 8
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(0, evalstack_top(executor->evalstack).integer);
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -322,9 +348,11 @@ void executor_dup_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 123};
-    instructions[2] = (Instruction){.opcode = DUP, .operand = 0};
-    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 123};
+    instructions[3] = (Instruction){.opcode = DUP, .operand = 0};
+    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // PUSH 123
     assert_int_equal(1, executor->evalstack->length);
@@ -333,6 +361,7 @@ void executor_dup_test(void **state)
     assert_int_equal(2, executor->evalstack->length);
     assert_int_equal(123, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -341,15 +370,18 @@ void executor_new_object_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = NEW, .operand = 2};
-    instructions[2] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = NEW, .operand = 3};
+    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // NEW 2
     assert_int_equal(1, executor->evalstack->length);
-    assert_int_equal(2, *(uint32_t *)evalstack_top(executor->evalstack).pointer);
+    assert_int_equal(3, *(uint32_t *)evalstack_top(executor->evalstack).pointer);
     // Free the allocated object.
     config._free(evalstack_top(executor->evalstack).pointer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -358,49 +390,51 @@ void executor_push_and_pop_fields_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = NEW, .operand = 2};
-    for (int i = 2; i < 7; i++)
+    instructions[2] = (Instruction){.opcode = NEW, .operand = 3};
+    for (int i = 3; i < 8; i++)
     {
         instructions[i] = (Instruction){.opcode = DUP, .operand = 0};
     }
-    instructions[7] = (Instruction){.opcode = PUSH, .operand = 100};
-    instructions[8] = (Instruction){.opcode = POP_FIELD, .operand = 3};
-    instructions[9] = (Instruction){.opcode = PUSH, .operand = 200};
-    instructions[10] = (Instruction){.opcode = POP_FIELD, .operand = 4};
-    instructions[11] = (Instruction){.opcode = PUSH, .operand = 300};
-    instructions[12] = (Instruction){.opcode = POP_FIELD, .operand = 5};
-    instructions[13] = (Instruction){.opcode = PUSH_FIELD, .operand = 3};
-    instructions[14] = (Instruction){.opcode = POP, .operand = 0};
-    instructions[15] = (Instruction){.opcode = PUSH_FIELD, .operand = 4};
-    instructions[16] = (Instruction){.opcode = POP, .operand = 0};
-    instructions[17] = (Instruction){.opcode = PUSH_FIELD, .operand = 5};
-    instructions[18] = (Instruction){.opcode = POP, .operand = 0};
-    instructions[19] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[8] = (Instruction){.opcode = PUSH, .operand = 100};
+    instructions[9] = (Instruction){.opcode = POP_FIELD, .operand = 4};
+    instructions[10] = (Instruction){.opcode = PUSH, .operand = 200};
+    instructions[11] = (Instruction){.opcode = POP_FIELD, .operand = 5};
+    instructions[12] = (Instruction){.opcode = PUSH, .operand = 300};
+    instructions[13] = (Instruction){.opcode = POP_FIELD, .operand = 6};
+    instructions[14] = (Instruction){.opcode = PUSH_FIELD, .operand = 4};
+    instructions[15] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[16] = (Instruction){.opcode = PUSH_FIELD, .operand = 5};
+    instructions[17] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[18] = (Instruction){.opcode = PUSH_FIELD, .operand = 6};
+    instructions[19] = (Instruction){.opcode = POP, .operand = 0};
+    instructions[20] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // NEW 2
+    assert_true(executor_step(executor)); // NEW 3
     void *object = evalstack_top(executor->evalstack).pointer;
 
-    for (int i = 2; i < 7; i++)
+    for (int i = 3; i < 8; i++)
     {
         assert_true(executor_step(executor)); // DUP
     }
 
     assert_true(executor_step(executor)); // PUSH 100
-    assert_true(executor_step(executor)); // POP_FIELD 3
-    assert_true(executor_step(executor)); // PUSH 200
     assert_true(executor_step(executor)); // POP_FIELD 4
-    assert_true(executor_step(executor)); // PUSH 300
+    assert_true(executor_step(executor)); // PUSH 200
     assert_true(executor_step(executor)); // POP_FIELD 5
+    assert_true(executor_step(executor)); // PUSH 300
+    assert_true(executor_step(executor)); // POP_FIELD 6
 
-    assert_true(executor_step(executor)); // PUSH_FIELD 3
+    assert_true(executor_step(executor)); // PUSH_FIELD 4
     assert_int_equal(100, evalstack_top(executor->evalstack).integer);
     assert_true(executor_step(executor)); // POP
 
-    assert_true(executor_step(executor)); // PUSH_FIELD 4
+    assert_true(executor_step(executor)); // PUSH_FIELD 5
     assert_int_equal(200, evalstack_top(executor->evalstack).integer);
     assert_true(executor_step(executor)); // POP
 
-    assert_true(executor_step(executor)); // PUSH_FIELD 5
+    assert_true(executor_step(executor)); // PUSH_FIELD 6
     assert_int_equal(300, evalstack_top(executor->evalstack).integer);
     assert_true(executor_step(executor)); // POP
 
@@ -410,6 +444,9 @@ void executor_push_and_pop_fields_test(void **state)
     config._free(object);
 
     assert_false(executor_step(executor)); // RETURN
+
+    config._free(main_obj);
+
     executor_free(executor);
 }
 
@@ -418,10 +455,12 @@ void executor_push_and_pop_var_test(void **state)
     CMockaState *cmocka_state = *state;
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
-    instructions[1] = (Instruction){.opcode = PUSH, .operand = 100};
-    instructions[2] = (Instruction){.opcode = POP_VAR, .operand = 0};
-    instructions[3] = (Instruction){.opcode = PUSH_VAR, .operand = 0};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = PUSH, .operand = 100};
+    instructions[3] = (Instruction){.opcode = POP_VAR, .operand = 0};
+    instructions[4] = (Instruction){.opcode = PUSH_VAR, .operand = 0};
+    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
     assert_true(executor_step(executor)); // PUSH 100
     assert_true(executor_step(executor)); // POP_VAR 0
@@ -431,6 +470,7 @@ void executor_push_and_pop_var_test(void **state)
     assert_int_equal(100, evalstack_top(executor->evalstack).integer);
     assert_int_equal(100, callstack_top(executor->callstack).vars[0].integer);
     assert_false(executor_step(executor)); // RETURN
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -440,11 +480,11 @@ void executor_call_max_test(void **state, int32_t a, int32_t b)
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
     // <main> function.
-    instructions[1] = (Instruction){.opcode = NEW, .operand = 6};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = a};
-    instructions[3] = (Instruction){.opcode = PUSH, .operand = b};
-    instructions[4] = (Instruction){.opcode = CALL, .operand = 7};
-    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = NEW, .operand = 7};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = a};
+    instructions[4] = (Instruction){.opcode = PUSH, .operand = b};
+    instructions[5] = (Instruction){.opcode = CALL, .operand = 8};
+    instructions[6] = (Instruction){.opcode = RETURN, .operand = 0};
 
     // Math.max(a, b) function.
     instructions[30] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
@@ -455,12 +495,14 @@ void executor_call_max_test(void **state, int32_t a, int32_t b)
     instructions[35] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
     instructions[36] = (Instruction){.opcode = RETURN, .operand = 0};
 
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // NEW 6
+    assert_true(executor_step(executor)); // NEW 7
     void *object = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // PUSH a
     assert_true(executor_step(executor)); // PUSH b
-    assert_true(executor_step(executor)); // CALL 7
+    assert_true(executor_step(executor)); // CALL 8
 
     assert_true(executor_step(executor)); // PUSH_VAR 1
     assert_int_equal(a, evalstack_top(executor->evalstack).integer);
@@ -475,6 +517,8 @@ void executor_call_max_test(void **state, int32_t a, int32_t b)
     // Free the allocated object.
     config._free(object);
     assert_false(executor_step(executor)); // RETURN
+
+    config._free(main_obj);
     executor_free(executor);
 }
 
@@ -499,10 +543,10 @@ void executor_call_fac_test(void **state, int32_t n, int32_t fac_of_n)
     Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
     Instruction *instructions = executor->inststream->instructions;
     // <main> function.
-    instructions[1] = (Instruction){.opcode = NEW, .operand = 8};
-    instructions[2] = (Instruction){.opcode = PUSH, .operand = n};
-    instructions[3] = (Instruction){.opcode = CALL, .operand = 9};
-    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[2] = (Instruction){.opcode = NEW, .operand = 9};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = n};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = 10};
+    instructions[5] = (Instruction){.opcode = RETURN, .operand = 0};
 
     // Factorial.fac(n) function.
     instructions[30] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
@@ -519,12 +563,14 @@ void executor_call_fac_test(void **state, int32_t n, int32_t fac_of_n)
     instructions[37] = (Instruction){.opcode = PUSH_VAR, .operand = 1};
     instructions[38] = (Instruction){.opcode = PUSH, .operand = 1};
     instructions[39] = (Instruction){.opcode = SUB, .operand = 0};
-    instructions[40] = (Instruction){.opcode = CALL, .operand = 9};
+    instructions[40] = (Instruction){.opcode = CALL, .operand = 10};
     instructions[41] = (Instruction){.opcode = MUL, .operand = 0};
     instructions[42] = (Instruction){.opcode = RETURN, .operand = 0};
 
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
     assert_true(executor_step(executor)); // CALL <main>
-    assert_true(executor_step(executor)); // NEW 8
+    assert_true(executor_step(executor)); // NEW 9
     void *object = evalstack_top(executor->evalstack).pointer;
 
     executor_step_all(executor);
@@ -534,7 +580,7 @@ void executor_call_fac_test(void **state, int32_t n, int32_t fac_of_n)
 
     // Free the allocated object.
     config._free(object);
-
+    config._free(main_obj);
     executor_free(executor);
 }
 

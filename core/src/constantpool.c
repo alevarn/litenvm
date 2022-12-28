@@ -64,13 +64,6 @@ void constantpool_compute_vtables(ConstantPool *constpool)
         {
             // Add the method to the vtable (may override a previous method definition with the same name).
             ConstantPoolEntryMethod *method = &entry->data.method;
-
-            // The main method does not belong to a class (special case).
-            if (method->_class == 0)
-            {
-                return;
-            }
-
             ConstantPoolEntryClass *_class = &constantpool_get(constpool, method->_class)->data._class;
             vtable_put(_class->vtable, (VTableEntry){.method_name = method->name, .const_index = i});
         }
