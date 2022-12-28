@@ -99,3 +99,29 @@ uint32_t vtable_hash(VTable *vtable, const char *method_name)
 
     return hash % vtable->length;
 }
+
+void vtable_copy(VTable *dest, VTable *src)
+{
+    for (uint32_t i = 0; i < src->length; i++)
+    {
+        if (src->table[i].const_index != 0)
+        {
+            vtable_put(dest, src->table[i]);
+        }
+    }
+}
+
+uint32_t vtable_size(VTable *vtable)
+{
+    uint32_t size = 0;
+
+    for (uint32_t i = 0; i < vtable->length; i++)
+    {
+        if (vtable->table[i].const_index != 0)
+        {
+            size++;
+        }
+    }
+
+    return size;
+}

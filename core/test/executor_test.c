@@ -24,18 +24,18 @@ void executor_new_test(void **state)
 static int executor_with_main_method_setup(void **state)
 {
     ConstantPool *constpool = constantpool_new(9);
-    constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 0, .address = 1, .args = 0, .locals = 1}});
-    constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0}});
+    constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.virtual = false, .name = "<main>", ._class = 0, .address = 1, .args = 0, .locals = 1}});
+    constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0, .vtable = NULL}});
     constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 0}});
     constantpool_add(constpool, 4, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "y", ._class = 2, .index = 1}});
     constantpool_add(constpool, 5, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "x", ._class = 2, .index = 2}});
-    constantpool_add(constpool, 6, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Math", .fields = 0, .methods = 1, .parent = 0}});
-    constantpool_add(constpool, 7, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 6, .address = 30, .args = 3, .locals = 0}});
-    constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0}});
-    constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 8, .address = 30, .args = 2, .locals = 0}});
+    constantpool_add(constpool, 6, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Math", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 7, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.virtual = false, .name = "max", ._class = 6, .address = 30, .args = 3, .locals = 0}});
+    constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.virtual = false, .name = "fac", ._class = 8, .address = 30, .args = 2, .locals = 0}});
     // Should be enough instruction space to perform all the tests we want.
     InstructionStream *inststream = inststream_new(100);
-    inststream->instructions[0] = (Instruction) {.opcode = CALL, .operand = 1};
+    inststream->instructions[0] = (Instruction){.opcode = CALL, .operand = 1};
     CMockaState *cmocka_state = config._malloc(sizeof(CMockaState));
     cmocka_state->constpool = constpool;
     cmocka_state->inststream = inststream;
