@@ -27,7 +27,6 @@ typedef struct
 
 typedef struct
 {
-    bool virtual;
     const char *name;
     uint32_t _class;
     uint32_t address;

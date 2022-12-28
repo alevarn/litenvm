@@ -49,6 +49,7 @@ void constantpool_compute_vtables(ConstantPool *constpool)
 
         if (entry->type == TYPE_CLASS)
         {
+            // Create a new vtable for the class.
             ConstantPoolEntryClass *_class = &entry->data._class;
             _class->vtable = vtable_new(_class->methods * 2);
 
@@ -61,13 +62,10 @@ void constantpool_compute_vtables(ConstantPool *constpool)
         }
         else if (entry->type == TYPE_METHOD)
         {
-            // If the method is virtual add it to the vtable (may override a previous method definition with the same name).
+            // Add the method to the vtable (may override a previous method definition with the same name).
             ConstantPoolEntryMethod *method = &entry->data.method;
-            if (method->virtual)
-            {
-                ConstantPoolEntryClass *_class = &constantpool_get(constpool, method->_class)->data._class;
-                vtable_put(_class->vtable, (VTableEntry){.method_name = method->name, .const_index = i});
-            }
+            ConstantPoolEntryClass *_class = &constantpool_get(constpool, method->_class)->data._class;
+            vtable_put(_class->vtable, (VTableEntry){.method_name = method->name, .const_index = i});
         }
     }
 }
