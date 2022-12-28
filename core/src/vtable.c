@@ -4,12 +4,11 @@
 #include "config.h"
 #include "vtable.h"
 
-VTable *vtable_new(ConstantPoolEntryClass _class)
+VTable *vtable_new(uint32_t length)
 {
-    uint32_t table_len = _class.methods * 2;
     VTable *vtable = (VTable *)config._malloc(sizeof(VTable));
-    vtable->length = table_len;
-    vtable->table = (VTableEntry *)config._calloc(table_len, sizeof(VTableEntry));
+    vtable->length = length;
+    vtable->table = (VTableEntry *)config._calloc(length, sizeof(VTableEntry));
     return vtable;
 }
 
@@ -27,6 +26,11 @@ void vtable_put(VTable *vtable, VTableEntry entry)
     while (true)
     {
         if (vtable->table[index].const_index == 0)
+        {
+            vtable->table[index] = entry;
+            break;
+        }
+        else if (strcmp(vtable->table[index].method_name, entry.method_name) == 0)
         {
             vtable->table[index] = entry;
             break;
@@ -80,17 +84,17 @@ uint32_t vtable_get(VTable *vtable, const char *method_name)
     }
 }
 
-uint32_t vtable_hash(VTable *vtable, const char *str)
+uint32_t vtable_hash(VTable *vtable, const char *method_name)
 {
     uint32_t hash = 0;
-    uint32_t n = strlen(str);
+    uint32_t n = strlen(method_name);
 
     // Algorithm from: Java's String hashcode().
-    while (*str != '\0')
+    while (*method_name != '\0')
     {
-        hash += *str * powl(31, n - 1);
+        hash += *method_name * powl(31, n - 1);
         n--;
-        str++;
+        method_name++;
     }
 
     return hash % vtable->length;

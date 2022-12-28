@@ -17,3 +17,6 @@ add_test(NAME "ConstantPool test" COMMAND constantpooltest)
 
 add_executable(executortest executor_test.c)
 add_test(NAME "Executor test" COMMAND executortest)
+
+add_executable(vtabletest vtable_test.c)
+add_test(NAME "VTable test" COMMAND vtabletest)

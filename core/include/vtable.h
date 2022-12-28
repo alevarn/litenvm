@@ -17,7 +17,7 @@ typedef struct
     uint32_t length;
 } VTable;
 
-VTable *vtable_new(ConstantPoolEntryClass _class);
+VTable *vtable_new(uint32_t length);
 
 void vtable_put(VTable *vtable, VTableEntry entry);
 
@@ -27,6 +27,6 @@ uint32_t vtable_get(VTable *vtable, const char *method_name);
 
 void vtable_free(VTable *vtable);
 
-uint32_t vtable_hash(VTable *vtable, const char *str);
+uint32_t vtable_hash(VTable *vtable, const char *method_name);
 
 #endif
