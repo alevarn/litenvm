@@ -33,6 +33,7 @@ static int executor_with_main_method_setup(void **state)
     constantpool_add(constpool, 7, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 6, .address = 30, .args = 3, .locals = 0}});
     constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
     constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 8, .address = 30, .args = 2, .locals = 0}});
+    constantpool_compute_vtables(constpool);
     // Should be enough instruction space to perform all the tests we want.
     InstructionStream *inststream = inststream_new(100);
     inststream->instructions[0] = (Instruction){.opcode = CALL, .operand = 1};
