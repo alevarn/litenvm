@@ -2,8 +2,8 @@
 #include "object.h"
 #include "constantpool.h"
 
-const ConstantPoolEntry classConsoleEntry = {.type = TYPE_CLASS, .data._class = {.name = "Console", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}};
-const ConstantPoolEntry methodConsolePrintlnEntry = {.type = TYPE_METHOD, .data.method = {.name = "println", ._class = CONSTPOOL_CLASS_CONSOLE, .address = 0, .args = 2, .locals = 0}};
+ConstantPoolEntry classConsoleEntry = {.type = TYPE_CLASS, .data._class = {.name = "Console", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}};
+ConstantPoolEntry methodConsolePrintlnEntry = {.type = TYPE_METHOD, .data.method = {.name = "println", ._class = CONSTPOOL_CLASS_CONSOLE, .address = 0, .args = 2, .locals = 0}};
 
 ConstantPool *constantpool_new(uint32_t length)
 {
