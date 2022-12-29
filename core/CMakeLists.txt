@@ -18,6 +18,7 @@ set(SRC_FILES
 # Build the litenvm core library. 
 add_library(${LITENVM_CORE_TARGET} STATIC ${SRC_FILES})
 target_include_directories(${LITENVM_CORE_TARGET} PUBLIC ${INC_DIR})
+target_link_libraries(${LITENVM_CORE_TARGET} m)
 
 # Fetch the cmocka library and build all tests. 
 include(cmake/FetchCMocka.cmake)
