@@ -11,6 +11,7 @@ set(SRC_FILES
     ${SRC_DIR}/constantpool.c
     ${SRC_DIR}/inststream.c
     ${SRC_DIR}/vtable.c
+    ${SRC_DIR}/object.c
     ${SRC_DIR}/executor.c
 )
 
