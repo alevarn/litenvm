@@ -714,6 +714,54 @@ void executor_string_test(void **state)
     executor_free(executor);
 }
 
+void executor_new_console_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_CONSOLE};
+    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW Console
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_int_equal(CONSTPOOL_CLASS_CONSOLE, object_get_class(object));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_call_console_println_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_CONSOLE};
+    instructions[3] = (Instruction){.opcode = PUSH_STRING, .operand = 18};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_CONSOLE_PRINTLN};
+    instructions[5] = (Instruction){.opcode = PUSH, .operand = 123};
+    instructions[6] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW Console
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // PUSH_STRING 18
+    void *string_object = evalstack_top(executor->evalstack).pointer;
+    assert_int_equal(2, executor->evalstack->length);
+    assert_true(executor_step(executor)); // CALL Console.println()
+    assert_int_equal(0, executor->evalstack->length);
+    assert_true(executor_step(executor)); // PUSH 123
+    assert_int_equal(1, executor->evalstack->length);
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(string_object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
 int main()
 {
     set_config(test_malloc_func, test_calloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -767,6 +815,8 @@ int main()
             cmocka_unit_test_setup_teardown(executor_polymorphism_dog_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_polymorphism_cat_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_string_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_new_console_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_call_console_println_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
