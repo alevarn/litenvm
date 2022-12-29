@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "executor.h"
@@ -83,6 +84,13 @@ static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(E
 
 static void call_method(Executor *executor, ConstantPoolEntryMethod *method)
 {
+    // Get the runtime class of the object used to call the method.
+    uint32_t constpool_class_index = *(uint32_t *)((EvalStackElement *)executor->evalstack->elements + (executor->evalstack->length - method->args))->pointer;
+    VTable *vtable = constantpool_get(executor->constpool, constpool_class_index)->data._class.vtable;
+    // Find the correct method to call by looking in vtable (we do this to achieve runtime polymorphism).
+    uint32_t constpool_method_index = vtable_get(vtable, method->name);
+    method = &constantpool_get(executor->constpool, constpool_method_index)->data.method;
+
     uint32_t vars_count = method->args + method->locals;
     CallStackFrame frame = {.return_address = executor->inststream->current + 1,
                             .vars_count = vars_count,

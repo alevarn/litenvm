@@ -23,7 +23,7 @@ void executor_new_test(void **state)
 
 static int executor_with_main_method_setup(void **state)
 {
-    ConstantPool *constpool = constantpool_new(10);
+    ConstantPool *constpool = constantpool_new(17);
     constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "<Main>", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
     constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 1, .address = 2, .args = 1, .locals = 1}});
     constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0, .vtable = NULL}});
@@ -34,6 +34,15 @@ static int executor_with_main_method_setup(void **state)
     constantpool_add(constpool, 8, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "max", ._class = 7, .address = 30, .args = 3, .locals = 0}});
     constantpool_add(constpool, 9, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Factorial", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
     constantpool_add(constpool, 10, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "fac", ._class = 9, .address = 30, .args = 2, .locals = 0}});
+
+    constantpool_add(constpool, 11, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Animal", .fields = 0, .methods = 2, .parent = 0, .vtable = NULL}});
+    constantpool_add(constpool, 12, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "sound", ._class = 11, .address = 30, .args = 1, .locals = 0}});
+    constantpool_add(constpool, 13, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "jump", ._class = 11, .address = 40, .args = 1, .locals = 0}});
+    constantpool_add(constpool, 14, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Dog", .fields = 0, .methods = 3, .parent = 11, .vtable = NULL}});
+    constantpool_add(constpool, 15, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "sound", ._class = 14, .address = 50, .args = 1, .locals = 0}});
+    constantpool_add(constpool, 16, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Cat", .fields = 0, .methods = 3, .parent = 11, .vtable = NULL}});
+    constantpool_add(constpool, 17, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "jump", ._class = 16, .address = 60, .args = 1, .locals = 0}});
+
     constantpool_compute_vtables(constpool);
     // Should be enough instruction space to perform all the tests we want.
     InstructionStream *inststream = inststream_new(100);
@@ -629,6 +638,53 @@ void executor_call_fac_8_test(void **state)
     executor_call_fac_test(state, 8, 40320);
 }
 
+void executor_polymorphism_test(void **state, uint32_t class_type, uint32_t sound_addr, uint32_t jump_addr)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = class_type};
+    instructions[3] = (Instruction){.opcode = DUP, .operand = 0};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = 12};
+    instructions[5] = (Instruction){.opcode = CALL, .operand = 13};
+    instructions[6] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[30] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[40] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[50] = (Instruction){.opcode = RETURN, .operand = 0};
+    instructions[60] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW class_type (Animal, Dog or Cat)
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // DUP
+    assert_true(executor_step(executor)); // Call Animal.sound()
+    assert_int_equal(executor->inststream->current, sound_addr);
+    assert_true(executor_step(executor)); // RETURN
+    assert_true(executor_step(executor)); // Call Animal.jump()
+    assert_int_equal(executor->inststream->current, jump_addr);
+    assert_true(executor_step(executor));  // RETURN
+    assert_false(executor_step(executor)); // RETURN
+    config._free(object);
+    config._free(main_obj);
+    executor_free(executor);
+}
+
+void executor_polymorphism_animal_test(void **state)
+{
+    executor_polymorphism_test(state, 11, 30, 40);
+}
+
+void executor_polymorphism_dog_test(void **state)
+{
+    executor_polymorphism_test(state, 14, 50, 40);
+}
+
+void executor_polymorphism_cat_test(void **state)
+{
+    executor_polymorphism_test(state, 16, 30, 60);
+}
+
 int main()
 {
     set_config(test_malloc_func, test_calloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -678,6 +734,9 @@ int main()
             cmocka_unit_test_setup_teardown(executor_call_fac_6_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_call_fac_7_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_call_fac_8_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_polymorphism_animal_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_polymorphism_dog_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_polymorphism_cat_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
