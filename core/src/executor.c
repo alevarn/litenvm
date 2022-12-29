@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "object.h"
+#include "string_class.h"
 #include "config.h"
 #include "executor.h"
 
@@ -154,6 +155,13 @@ static void pop_field(Executor *executor, uint32_t constpool_field)
     *get_field(executor, object, constpool_field) = value;
 }
 
+static void push_string(Executor *executor, uint32_t constpool_string)
+{
+    const char *value = constantpool_get(executor->constpool, constpool_string)->data.string.value;
+    void *string_object = string_new(value);
+    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = string_object});
+}
+
 bool executor_step(Executor *executor)
 {
     size_t current = executor->inststream->current;
@@ -167,8 +175,8 @@ bool executor_step(Executor *executor)
     case PUSH:
         evalstack_push(evalstack, (EvalStackElement){.integer = inst.operand});
         break;
-    case PUSH_CONST:
-        // Implement
+    case PUSH_STRING:
+        push_string(executor, inst.operand);
         break;
     case PUSH_VAR:
         evalstack_push(evalstack, callstack_top(callstack).vars[inst.operand]);

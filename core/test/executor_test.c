@@ -1,6 +1,8 @@
 #include "unit_testing.h"
 
 #include "config.h"
+#include "object.h"
+#include "string_class.h"
 #include "executor.h"
 
 #define STACK_INITIAL_CAPACITY 8
@@ -23,7 +25,7 @@ void executor_new_test(void **state)
 
 static int executor_with_main_method_setup(void **state)
 {
-    ConstantPool *constpool = constantpool_new(17);
+    ConstantPool *constpool = constantpool_new(19);
     constantpool_add(constpool, 1, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "<Main>", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}});
     constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "<main>", ._class = 1, .address = 2, .args = 1, .locals = 1}});
     constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "MyClass", .fields = 3, .methods = 0, .parent = 0, .vtable = NULL}});
@@ -42,6 +44,9 @@ static int executor_with_main_method_setup(void **state)
     constantpool_add(constpool, 15, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "sound", ._class = 14, .address = 50, .args = 1, .locals = 0}});
     constantpool_add(constpool, 16, (ConstantPoolEntry){.type = TYPE_CLASS, .data._class = {.name = "Cat", .fields = 0, .methods = 3, .parent = 11, .vtable = NULL}});
     constantpool_add(constpool, 17, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "jump", ._class = 16, .address = 60, .args = 1, .locals = 0}});
+
+    constantpool_add(constpool, 18, (ConstantPoolEntry){.type = TYPE_STRING, .data.string = {.value = "Hello!"}});
+    constantpool_add(constpool, 19, (ConstantPoolEntry){.type = TYPE_STRING, .data.string = {.value = "Bye bye!"}});
 
     constantpool_compute_vtables(constpool);
     // Should be enough instruction space to perform all the tests we want.
@@ -80,7 +85,7 @@ void executor_main_method_test(void **state)
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(0, executor->callstack->length);
     assert_int_equal(0, executor->evalstack->length);
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -98,7 +103,7 @@ void executor_push_test(void **state)
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(123, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -119,7 +124,7 @@ void executor_push_and_pop_test(void **state)
     assert_true(executor_step(executor)); // POP
     assert_int_equal(0, executor->evalstack->length);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -145,7 +150,7 @@ void executor_arithmetic_test(void **state, int32_t first, int32_t second, uint8
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(result, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -191,7 +196,7 @@ void executor_jump_skip_test(void **state)
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(25, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -215,7 +220,7 @@ void executor_jump_no_effect_test(void **state)
     assert_int_equal(2, executor->evalstack->length);
     assert_int_equal(25, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -241,7 +246,7 @@ void executor_cond_jump_true_test(void **state, int32_t first, int32_t second, u
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(1, evalstack_top(executor->evalstack).integer);
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -268,7 +273,7 @@ void executor_cond_jump_false_test(void **state, int32_t first, int32_t second, 
     assert_false(executor_step(executor)); // RETURN
     assert_int_equal(1, executor->evalstack->length);
     assert_int_equal(0, evalstack_top(executor->evalstack).integer);
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -370,7 +375,7 @@ void executor_dup_test(void **state)
     assert_int_equal(2, executor->evalstack->length);
     assert_int_equal(123, evalstack_top(executor->evalstack).integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -390,7 +395,7 @@ void executor_new_object_test(void **state)
     // Free the allocated object.
     config._free(evalstack_top(executor->evalstack).pointer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -450,11 +455,11 @@ void executor_push_and_pop_fields_test(void **state)
     assert_int_equal(0, executor->evalstack->length);
 
     // Free the allocated object.
-    config._free(object);
+    object_free(object);
 
     assert_false(executor_step(executor)); // RETURN
 
-    config._free(main_obj);
+    object_free(main_obj);
 
     executor_free(executor);
 }
@@ -479,7 +484,7 @@ void executor_push_and_pop_var_test(void **state)
     assert_int_equal(100, evalstack_top(executor->evalstack).integer);
     assert_int_equal(100, callstack_top(executor->callstack).vars[0].integer);
     assert_false(executor_step(executor)); // RETURN
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -524,10 +529,10 @@ void executor_call_max_test(void **state, int32_t a, int32_t b)
     assert_int_equal(a > b ? a : b, evalstack_top(executor->evalstack).integer);
 
     // Free the allocated object.
-    config._free(object);
+    object_free(object);
     assert_false(executor_step(executor)); // RETURN
 
-    config._free(main_obj);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -588,8 +593,8 @@ void executor_call_fac_test(void **state, int32_t n, int32_t fac_of_n)
     assert_int_equal(fac_of_n, evalstack_top(executor->evalstack).integer);
 
     // Free the allocated object.
-    config._free(object);
-    config._free(main_obj);
+    object_free(object);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -665,8 +670,8 @@ void executor_polymorphism_test(void **state, uint32_t class_type, uint32_t soun
     assert_int_equal(executor->inststream->current, jump_addr);
     assert_true(executor_step(executor));  // RETURN
     assert_false(executor_step(executor)); // RETURN
-    config._free(object);
-    config._free(main_obj);
+    object_free(object);
+    object_free(main_obj);
     executor_free(executor);
 }
 
@@ -683,6 +688,30 @@ void executor_polymorphism_dog_test(void **state)
 void executor_polymorphism_cat_test(void **state)
 {
     executor_polymorphism_test(state, 16, 30, 60);
+}
+
+void executor_string_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = PUSH_STRING, .operand = 18};
+    instructions[3] = (Instruction){.opcode = PUSH_STRING, .operand = 19};
+    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // PUSH_STRING 18
+    void *string_object = evalstack_top(executor->evalstack).pointer;
+    assert_string_equal("Hello!", string_get_value(string_object));
+    assert_true(executor_step(executor)); // PUSH_STRING 19
+    void *string_object_2 = evalstack_top(executor->evalstack).pointer;
+    assert_string_equal("Bye bye!", string_get_value(string_object_2));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(string_object);
+    object_free(string_object_2);
+    object_free(main_obj);
+    executor_free(executor);
 }
 
 int main()
@@ -737,6 +766,7 @@ int main()
             cmocka_unit_test_setup_teardown(executor_polymorphism_animal_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_polymorphism_dog_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_polymorphism_cat_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

@@ -7,7 +7,7 @@
 #define JUMP_BIT 0x80
 
 #define PUSH 0x0
-#define PUSH_CONST 0x1
+#define PUSH_STRING 0x1
 #define PUSH_VAR 0x2
 #define PUSH_FIELD 0x3
 

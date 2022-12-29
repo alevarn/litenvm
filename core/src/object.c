@@ -1,4 +1,5 @@
 #include "config.h"
+#include "string_class.h"
 #include "object.h"
 
 void *object_new(uint32_t constpool_class, uint32_t fields_length)
@@ -10,7 +11,15 @@ void *object_new(uint32_t constpool_class, uint32_t fields_length)
 
 void object_free(void *object)
 {
-    config._free(object);
+    switch (object_get_class(object))
+    {
+    case CONSTPOOL_CLASS_STRING:
+        string_free(object);
+        break;
+    default:
+        config._free(object);
+        break;
+    }
 }
 
 uint32_t object_get_class(void *object)
