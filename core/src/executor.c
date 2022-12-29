@@ -83,17 +83,17 @@ static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(E
     evalstack_push(evalstack, op(left, right));
 }
 
-static void call_method(Executor *executor, uint32_t const_method)
+static void call_method(Executor *executor, uint32_t constpool_method)
 {
-    ConstantPoolEntryMethod *method = &constantpool_get(executor->constpool, const_method)->data.method;
+    ConstantPoolEntryMethod *method = &constantpool_get(executor->constpool, constpool_method)->data.method;
 
     // Get the runtime class of the object used to call the method in order to find the vtable.
     uint32_t constpool_class = object_get_class(((EvalStackElement *)executor->evalstack->elements + (executor->evalstack->length - method->args))->pointer);
     VTable *vtable = constantpool_get(executor->constpool, constpool_class)->data._class.vtable;
 
     // Find the correct method to call by looking in the vtable (we do this to achieve runtime polymorphism).
-    const_method = vtable_get(vtable, method->name);
-    method = &constantpool_get(executor->constpool, const_method)->data.method;
+    constpool_method = vtable_get(vtable, method->name);
+    method = &constantpool_get(executor->constpool, constpool_method)->data.method;
 
     uint32_t vars_count = method->args + method->locals;
     CallStackFrame frame = {.return_address = executor->inststream->current + 1,
