@@ -8,6 +8,7 @@
 #define TYPE_CLASS 0
 #define TYPE_FIELD 1
 #define TYPE_METHOD 2
+#define TYPE_STRING 3
 
 typedef struct
 {
@@ -36,12 +37,18 @@ typedef struct
 
 typedef struct
 {
+    const char *value;
+} ConstantPoolEntryString;
+
+typedef struct
+{
     uint8_t type;
     union
     {
         ConstantPoolEntryClass _class;
         ConstantPoolEntryField field;
         ConstantPoolEntryMethod method;
+        ConstantPoolEntryString string;
     } data;
 } ConstantPoolEntry;
 

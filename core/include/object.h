@@ -5,6 +5,8 @@
 
 #include "evalstack.h"
 
+#define CONSTPOOL_CLASS_STRING (300)
+
 void *object_new(uint32_t constpool_class, uint32_t fields_length);
 
 void object_free(void *object);
