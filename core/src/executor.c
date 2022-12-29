@@ -84,17 +84,27 @@ static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(E
     evalstack_push(evalstack, op(left, right));
 }
 
-static void call_method(Executor *executor, uint32_t constpool_method)
+static void native_method_println(Executor *executor)
+{
+    CallStackFrame frame = callstack_top(executor->callstack);
+    printf("%s\n", string_get_value(frame.vars[1].pointer));
+}
+
+static void enter_method(Executor *executor, uint32_t constpool_method, bool native)
 {
     ConstantPoolEntryMethod *method = &constantpool_get(executor->constpool, constpool_method)->data.method;
 
-    // Get the runtime class of the object used to call the method in order to find the vtable.
-    uint32_t constpool_class = object_get_class(((EvalStackElement *)executor->evalstack->elements + (executor->evalstack->length - method->args))->pointer);
-    VTable *vtable = constantpool_get(executor->constpool, constpool_class)->data._class.vtable;
+    // Builtin native methods do not have a vtable.
+    if (!native)
+    {
+        // Get the runtime class of the object used to call the method in order to find the vtable.
+        uint32_t constpool_class = object_get_class(((EvalStackElement *)executor->evalstack->elements + (executor->evalstack->length - method->args))->pointer);
+        VTable *vtable = constantpool_get(executor->constpool, constpool_class)->data._class.vtable;
 
-    // Find the correct method to call by looking in the vtable (we do this to achieve runtime polymorphism).
-    constpool_method = vtable_get(vtable, method->name);
-    method = &constantpool_get(executor->constpool, constpool_method)->data.method;
+        // Find the correct method to call by looking in the vtable (we do this to achieve runtime polymorphism).
+        uint32_t constpool_method = vtable_get(vtable, method->name);
+        method = &constantpool_get(executor->constpool, constpool_method)->data.method;
+    }
 
     uint32_t vars_count = method->args + method->locals;
     CallStackFrame frame = {.return_address = executor->inststream->current + 1,
@@ -123,6 +133,31 @@ static void exit_method(Executor *executor)
     config._free(frame.vars);
 
     callstack_pop(executor->callstack);
+}
+
+static void call_native_method(Executor *executor, uint32_t constpool_method, void (*native_method)(Executor *))
+{
+    enter_method(executor, constpool_method, true);
+    native_method(executor);
+    exit_method(executor);
+}
+
+static void call_virtual_method(Executor *executor, uint32_t constpool_method)
+{
+    enter_method(executor, constpool_method, false);
+}
+
+static void call_method(Executor *executor, uint32_t constpool_method)
+{
+    switch (constpool_method)
+    {
+    case CONSTPOOL_METHOD_CONSOLE_PRINTLN:
+        call_native_method(executor, constpool_method, native_method_println);
+        break;
+    default:
+        call_virtual_method(executor, constpool_method);
+        break;
+    }
 }
 
 static void new_object(Executor *executor, uint32_t constpool_class)

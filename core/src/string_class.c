@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "constantpool.h"
 #include "object.h"
 #include "string_class.h"
 

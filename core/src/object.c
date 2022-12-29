@@ -1,4 +1,5 @@
 #include "config.h"
+#include "constantpool.h"
 #include "string_class.h"
 #include "object.h"
 
