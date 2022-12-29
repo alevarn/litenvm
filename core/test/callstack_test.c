@@ -58,7 +58,7 @@ void callstack_multiple_push_pop_test(void **state)
 
 int main()
 {
-    set_config(test_malloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
+    set_config(test_malloc_func, test_calloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
 
     const struct CMUnitTest tests[] =
         {

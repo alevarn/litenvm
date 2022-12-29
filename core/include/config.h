@@ -6,6 +6,7 @@
 typedef struct
 {
     void *(*_malloc)(size_t);
+    void *(*_calloc)(size_t, size_t);
     void *(*_realloc)(void *, size_t);
     void (*_free)(void *);
     size_t min_stack_capacity;
@@ -15,6 +16,7 @@ extern Config config;
 
 void set_config(
     void *(*_malloc)(size_t),
+    void *(*_calloc)(size_t, size_t),
     void *(*_realloc)(void *, size_t),
     void (*_free)(void *),
     size_t min_stack_capacity);

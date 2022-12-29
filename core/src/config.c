@@ -2,6 +2,7 @@
 
 Config config = {
     ._malloc = malloc,
+    ._calloc = calloc,
     ._realloc = realloc,
     ._free = free,
     .min_stack_capacity = 128,
@@ -9,11 +10,13 @@ Config config = {
 
 void set_config(
     void *(*_malloc)(size_t),
+    void *(*_calloc)(size_t, size_t),
     void *(*_realloc)(void *, size_t),
     void (*_free)(void *),
     size_t min_stack_capacity)
 {
     config._malloc = _malloc;
+    config._calloc = _calloc;
     config._realloc = _realloc;
     config._free = _free;
     config.min_stack_capacity = min_stack_capacity;
