@@ -152,3 +152,115 @@ InstructionStream *binform_read_instructions(FILE *file)
 
     return inststream;
 }
+
+void binform_print(ConstantPool *constpool, InstructionStream *inststream)
+{
+    if (constpool)
+    {
+        printf("Constant pool:\n");
+        for (uint32_t i = 1; i < constpool->length; i++)
+        {
+            ConstantPoolEntry *entry = constantpool_get(constpool, i);
+
+            switch (entry->type)
+            {
+            case TYPE_CLASS:
+                printf("#%d\t\tCLASS\t\t%s (parent=%d, fields=%d, methods=%d)\n", i, entry->data._class.name, entry->data._class.parent, entry->data._class.fields, entry->data._class.methods);
+                break;
+            case TYPE_FIELD:
+                printf("#%d\t\tFIELD\t\t%s (class=%d, index=%d)\n", i, entry->data.field.name, entry->data.field._class, entry->data.field.index);
+                break;
+            case TYPE_METHOD:
+                printf("#%d\t\tMETHOD\t\t%s (class=%d, address=%d, args=%d, locals=%d)\n", i, entry->data.method.name, entry->data.method._class, entry->data.method.address, entry->data.method.args, entry->data.method.locals);
+                break;
+            case TYPE_STRING:
+                printf("#%d\t\tSTRING\t\t\"%s\"\n", i, "STRING", entry->data.string.value);
+                break;
+            }
+        }
+        if (inststream)
+        {
+            printf("\n");
+        }
+    }
+
+    if (inststream)
+    {
+        printf("Instruction stream:\n");
+        for (uint32_t i = 0; i < inststream->length; i++)
+        {
+            uint8_t opcode = inststream->instructions[i].opcode;
+            uint32_t operand = inststream->instructions[i].operand;
+
+            switch (opcode)
+            {
+            case PUSH:
+                printf("%d\t\t%s\t\t%d\n", i, "PUSH", operand);
+                break;
+            case PUSH_STRING:
+                printf("%d\t\t%s\t\t%d\n", i, "PUSH_STRING", operand);
+                break;
+            case PUSH_VAR:
+                printf("%d\t\t%s\t\t%d\n", i, "PUSH_VAR", operand);
+                break;
+            case PUSH_FIELD:
+                printf("%d\t\t%s\t\t%d\n", i, "PUSH_FIELD", operand);
+                break;
+            case POP:
+                printf("%d\t\t%s\t\t%d\n", i, "POP", operand);
+                break;
+            case POP_VAR:
+                printf("%d\t\t%s\t\t%d\n", i, "POP_VAR", operand);
+                break;
+            case POP_FIELD:
+                printf("%d\t\t%s\t\t%d\n", i, "POP_FIELD", operand);
+                break;
+            case ADD:
+                printf("%d\t\t%s\t\t%d\n", i, "ADD", operand);
+                break;
+            case SUB:
+                printf("%d\t\t%s\t\t%d\n", i, "SUB", operand);
+                break;
+            case MUL:
+                printf("%d\t\t%s\t\t%d\n", i, "MUL", operand);
+                break;
+            case DIV:
+                printf("%d\t\t%s\t\t%d\n", i, "DIV", operand);
+                break;
+            case CALL:
+                printf("%d\t\t%s\t\t%d\n", i, "CALL", operand);
+                break;
+            case RETURN:
+                printf("%d\t\t%s\t\t%d\n", i, "RETURN", operand);
+                break;
+            case NEW:
+                printf("%d\t\t%s\t\t%d\n", i, "NEW", operand);
+                break;
+            case DUP:
+                printf("%d\t\t%s\t\t%d\n", i, "DUP", operand);
+                break;
+            case JUMP:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP", operand);
+                break;
+            case JUMP_EQ:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_EQ", operand);
+                break;
+            case JUMP_NE:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_NE", operand);
+                break;
+            case JUMP_LT:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_LT", operand);
+                break;
+            case JUMP_LE:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_LE", operand);
+                break;
+            case JUMP_GT:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_GT", operand);
+                break;
+            case JUMP_GE:
+                printf("%d\t\t%s\t\t%d\n", i, "JUMP_GE", operand);
+                break;
+            }
+        }
+    }
+}

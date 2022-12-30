@@ -14,4 +14,6 @@ ConstantPool *binform_read_constantpool(FILE *file);
 
 InstructionStream *binform_read_instructions(FILE *file);
 
+void binform_print(ConstantPool *constpool, InstructionStream *inststream);
+
 #endif
