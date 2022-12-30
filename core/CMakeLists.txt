@@ -13,6 +13,7 @@ set(SRC_FILES
     ${SRC_DIR}/vtable.c
     ${SRC_DIR}/object.c
     ${SRC_DIR}/string_class.c 
+    ${SRC_DIR}/string_builder_class.c 
     ${SRC_DIR}/executor.c
 )
 
