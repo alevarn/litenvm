@@ -20,3 +20,6 @@ add_test(NAME "Executor test" COMMAND executortest)
 
 add_executable(vtabletest vtable_test.c)
 add_test(NAME "VTable test" COMMAND vtabletest)
+
+add_executable(binaryformattest binary_format_test.c)
+add_test(NAME "BinaryFormat test" COMMAND binaryformattest)
