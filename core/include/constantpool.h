@@ -22,7 +22,7 @@
 
 typedef struct
 {
-    const char *name;
+    char *name;
     uint32_t parent;
     uint32_t fields;
     uint32_t methods;
@@ -31,14 +31,14 @@ typedef struct
 
 typedef struct
 {
-    const char *name;
+    char *name;
     uint32_t _class;
     uint32_t index;
 } ConstantPoolEntryField;
 
 typedef struct
 {
-    const char *name;
+    char *name;
     uint32_t _class;
     uint32_t address;
     uint32_t args;
@@ -47,7 +47,7 @@ typedef struct
 
 typedef struct
 {
-    const char *value;
+    char *value;
 } ConstantPoolEntryString;
 
 typedef struct
