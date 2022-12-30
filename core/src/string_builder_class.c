@@ -42,7 +42,13 @@ void *string_builder_append_string(void *string_builder_object, void *string_obj
 
 void *string_builder_append_int(void *string_builder_object, int32_t int_value)
 {
-    
+    char buffer[32];
+    itoa(int_value, buffer, 10);
+    void *new_string_object = concat_string(string_get_value(object_get_field(string_builder_object, 0)->pointer), buffer);
+    // Free the previous string object.
+    string_free(object_get_field(string_builder_object, 0)->pointer);
+    // Set the new string object.
+    *object_get_field(string_builder_object, 0) = (EvalStackElement){.pointer = new_string_object};
 }
 
 void *string_builder_append_bool(void *string_builder_object, int32_t bool_value)

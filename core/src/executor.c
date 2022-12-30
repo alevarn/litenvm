@@ -105,6 +105,13 @@ static void native_method_string_builder_append_bool(Executor *executor)
     evalstack_push(executor->evalstack, (EvalStackElement){.pointer = frame.vars[0].pointer});
 }
 
+static void native_method_string_builder_append_int(Executor *executor)
+{
+    CallStackFrame frame = callstack_top(executor->callstack);
+    string_builder_append_int(frame.vars[0].pointer, frame.vars[1].integer);
+    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = frame.vars[0].pointer});
+}
+
 static void native_method_string_builder_to_string(Executor *executor)
 {
     CallStackFrame frame = callstack_top(executor->callstack);
@@ -180,6 +187,9 @@ static void call_method(Executor *executor, uint32_t constpool_method)
         break;
     case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL:
         call_native_method(executor, constpool_method, native_method_string_builder_append_bool);
+        break;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_INT:
+        call_native_method(executor, constpool_method, native_method_string_builder_append_int);
         break;
     case CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING:
         call_native_method(executor, constpool_method, native_method_string_builder_to_string);
