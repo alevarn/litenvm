@@ -1,4 +1,4 @@
-set(LITENVM_CORE_TARGET litenvmcore)
+cmake_minimum_required(VERSION 3.20.5)
 
 set(SRC_DIR src)
 set(INC_DIR include)
