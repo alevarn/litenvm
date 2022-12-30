@@ -762,6 +762,196 @@ void executor_call_console_println_test(void **state)
     executor_free(executor);
 }
 
+void executor_new_string_builder_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_int_equal(CONSTPOOL_CLASS_STRING_BUILDER, object_get_class(object));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_to_string_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING};
+    instructions[4] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL StringBuilder.toString()
+    void *string_object = evalstack_top(executor->evalstack).pointer;
+    assert_int_equal(1, executor->evalstack->length);
+    assert_string_equal("", string_get_value(string_object));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_append_string_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = PUSH_STRING, .operand = 18};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_STRING};
+    instructions[5] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING};
+    instructions[6] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // PUSH_STRING 18
+    void *string_object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_int_equal(1, executor->evalstack->length);
+    assert_true(executor_step(executor)); // CALL Stringbuilder.toString()
+    assert_string_equal("Hello!", string_get_value(evalstack_top(executor->evalstack).pointer));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(string_object);
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_append_string_twice_test(void **state)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = PUSH_STRING, .operand = 18};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_STRING};
+    instructions[5] = (Instruction){.opcode = PUSH_STRING, .operand = 19};
+    instructions[6] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_STRING};
+    instructions[7] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING};
+    instructions[8] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // PUSH_STRING 18
+    void *string_object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_true(executor_step(executor)); // PUSH_STRING 19
+    void *string_object_2 = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_true(executor_step(executor)); // CALL Stringbuilder.toString()
+    assert_string_equal("Hello!Bye bye!", string_get_value(evalstack_top(executor->evalstack).pointer));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(string_object);
+    object_free(string_object_2);
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_append_bool_test(void **state, bool bool_value, const char *result)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = bool_value ? 1 : 0};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL};
+    instructions[5] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING};
+    instructions[6] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // PUSH bool_value
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_int_equal(1, executor->evalstack->length);
+    assert_true(executor_step(executor)); // CALL Stringbuilder.toString()
+    assert_string_equal(result, string_get_value(evalstack_top(executor->evalstack).pointer));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_append_bool_twice_test(void **state, bool first_bool, bool second_bool, const char *result)
+{
+    CMockaState *cmocka_state = *state;
+    Executor *executor = executor_new(cmocka_state->constpool, cmocka_state->inststream);
+    Instruction *instructions = executor->inststream->instructions;
+    instructions[2] = (Instruction){.opcode = NEW, .operand = CONSTPOOL_CLASS_STRING_BUILDER};
+    instructions[3] = (Instruction){.opcode = PUSH, .operand = first_bool ? 1 : 0};
+    instructions[4] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL};
+    instructions[5] = (Instruction){.opcode = PUSH, .operand = second_bool ? 1 : 0};
+    instructions[6] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL};
+    instructions[7] = (Instruction){.opcode = CALL, .operand = CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING};
+    instructions[8] = (Instruction){.opcode = RETURN, .operand = 0};
+    assert_true(executor_step(executor)); // NEW <Main>
+    void *main_obj = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // CALL <main>
+    assert_true(executor_step(executor)); // NEW StringBuilder
+    void *object = evalstack_top(executor->evalstack).pointer;
+    assert_true(executor_step(executor)); // PUSH first_bool
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_int_equal(1, executor->evalstack->length);
+    assert_true(executor_step(executor)); // PUSH second_bool
+    assert_true(executor_step(executor)); // CALL Stringbuilder.appendString()
+    assert_int_equal(1, executor->evalstack->length);
+    assert_true(executor_step(executor)); // CALL Stringbuilder.toString()
+    assert_string_equal(result, string_get_value(evalstack_top(executor->evalstack).pointer));
+    assert_false(executor_step(executor)); // RETURN
+    object_free(object);
+    object_free(main_obj);
+    executor_free(executor);
+}
+
+void executor_string_builder_append_bool_true_test(void **state)
+{
+    executor_string_builder_append_bool_test(state, true, "true");
+}
+
+void executor_string_builder_append_bool_false_test(void **state)
+{
+    executor_string_builder_append_bool_test(state, false, "false");
+}
+
+void executor_string_builder_append_bool_false_false_test(void **state)
+{
+    executor_string_builder_append_bool_twice_test(state, false, false, "falsefalse");
+}
+
+void executor_string_builder_append_bool_false_true_test(void **state)
+{
+    executor_string_builder_append_bool_twice_test(state, false, true, "falsetrue");
+}
+
+void executor_string_builder_append_bool_true_false_test(void **state)
+{
+    executor_string_builder_append_bool_twice_test(state, true, false, "truefalse");
+}
+
+void executor_string_builder_append_bool_true_true_test(void **state)
+{
+    executor_string_builder_append_bool_twice_test(state, true, true, "truetrue");
+}
+
 int main()
 {
     set_config(test_malloc_func, test_calloc_func, test_realloc_func, test_free_func, STACK_INITIAL_CAPACITY);
@@ -817,6 +1007,16 @@ int main()
             cmocka_unit_test_setup_teardown(executor_string_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_new_console_test, executor_with_main_method_setup, executor_with_main_method_teardown),
             cmocka_unit_test_setup_teardown(executor_call_console_println_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_new_string_builder_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_to_string_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_string_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_string_twice_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_true_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_false_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_false_false_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_false_true_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_true_false_test, executor_with_main_method_setup, executor_with_main_method_teardown),
+            cmocka_unit_test_setup_teardown(executor_string_builder_append_bool_true_true_test, executor_with_main_method_setup, executor_with_main_method_teardown),
         };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

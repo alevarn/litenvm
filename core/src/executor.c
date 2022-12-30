@@ -3,6 +3,7 @@
 
 #include "object.h"
 #include "string_class.h"
+#include "string_builder_class.h"
 #include "config.h"
 #include "executor.h"
 
@@ -84,10 +85,30 @@ static void apply_binary_function(EvalStack *evalstack, EvalStackElement (*op)(E
     evalstack_push(evalstack, op(left, right));
 }
 
-static void native_method_println(Executor *executor)
+static void native_method_console_println(Executor *executor)
 {
     CallStackFrame frame = callstack_top(executor->callstack);
     printf("%s\n", string_get_value(frame.vars[1].pointer));
+}
+
+static void native_method_string_builder_append_string(Executor *executor)
+{
+    CallStackFrame frame = callstack_top(executor->callstack);
+    string_builder_append_string(frame.vars[0].pointer, frame.vars[1].pointer);
+    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = frame.vars[0].pointer});
+}
+
+static void native_method_string_builder_append_bool(Executor *executor)
+{
+    CallStackFrame frame = callstack_top(executor->callstack);
+    string_builder_append_bool(frame.vars[0].pointer, frame.vars[1].integer);
+    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = frame.vars[0].pointer});
+}
+
+static void native_method_string_builder_to_string(Executor *executor)
+{
+    CallStackFrame frame = callstack_top(executor->callstack);
+    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = string_builder_to_string(frame.vars[0].pointer)});
 }
 
 static void enter_method(Executor *executor, uint32_t constpool_method, bool native)
@@ -152,7 +173,16 @@ static void call_method(Executor *executor, uint32_t constpool_method)
     switch (constpool_method)
     {
     case CONSTPOOL_METHOD_CONSOLE_PRINTLN:
-        call_native_method(executor, constpool_method, native_method_println);
+        call_native_method(executor, constpool_method, native_method_console_println);
+        break;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_STRING:
+        call_native_method(executor, constpool_method, native_method_string_builder_append_string);
+        break;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL:
+        call_native_method(executor, constpool_method, native_method_string_builder_append_bool);
+        break;
+    case CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING:
+        call_native_method(executor, constpool_method, native_method_string_builder_to_string);
         break;
     default:
         call_virtual_method(executor, constpool_method);
@@ -163,7 +193,15 @@ static void call_method(Executor *executor, uint32_t constpool_method)
 static void new_object(Executor *executor, uint32_t constpool_class)
 {
     ConstantPoolEntryClass *_class = &constantpool_get(executor->constpool, constpool_class)->data._class;
-    evalstack_push(executor->evalstack, (EvalStackElement){.pointer = object_new(constpool_class, _class->fields)});
+    switch (constpool_class)
+    {
+    case CONSTPOOL_CLASS_STRING_BUILDER:
+        evalstack_push(executor->evalstack, (EvalStackElement){.pointer = string_builder_new()});
+        break;
+    default:
+        evalstack_push(executor->evalstack, (EvalStackElement){.pointer = object_new(constpool_class, _class->fields)});
+        break;
+    }
 }
 
 static EvalStackElement *get_field(Executor *executor, void *object, uint32_t constpool_field)

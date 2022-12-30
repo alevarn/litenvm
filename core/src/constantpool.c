@@ -2,8 +2,14 @@
 #include "object.h"
 #include "constantpool.h"
 
-ConstantPoolEntry classConsoleEntry = {.type = TYPE_CLASS, .data._class = {.name = "Console", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}};
-ConstantPoolEntry methodConsolePrintlnEntry = {.type = TYPE_METHOD, .data.method = {.name = "println", ._class = CONSTPOOL_CLASS_CONSOLE, .address = 0, .args = 2, .locals = 0}};
+ConstantPoolEntry class_console_entry = {.type = TYPE_CLASS, .data._class = {.name = "Console", .fields = 0, .methods = 1, .parent = 0, .vtable = NULL}};
+ConstantPoolEntry method_console_println_entry = {.type = TYPE_METHOD, .data.method = {.name = "println", ._class = CONSTPOOL_CLASS_CONSOLE, .address = 0, .args = 2, .locals = 0}};
+
+ConstantPoolEntry class_string_builder_entry = {.type = TYPE_CLASS, .data._class = {.name = "StringBuilder", .fields = 1, .methods = 4, .parent = 0, .vtable = NULL}};
+ConstantPoolEntry method_string_builder_append_string_entry = {.type = TYPE_METHOD, .data.method = {.name = "appendString", ._class = CONSTPOOL_CLASS_STRING_BUILDER, .address = 0, .args = 2, .locals = 0}};
+ConstantPoolEntry method_string_builder_append_int_entry = {.type = TYPE_METHOD, .data.method = {.name = "appendInt", ._class = CONSTPOOL_CLASS_STRING_BUILDER, .address = 0, .args = 2, .locals = 0}};
+ConstantPoolEntry method_string_builder_append_bool_entry = {.type = TYPE_METHOD, .data.method = {.name = "appendBool", ._class = CONSTPOOL_CLASS_STRING_BUILDER, .address = 0, .args = 2, .locals = 0}};
+ConstantPoolEntry method_string_builder_to_string_entry = {.type = TYPE_METHOD, .data.method = {.name = "toString", ._class = CONSTPOOL_CLASS_STRING_BUILDER, .address = 0, .args = 1, .locals = 0}};
 
 ConstantPool *constantpool_new(uint32_t length)
 {
@@ -43,9 +49,19 @@ ConstantPoolEntry *constantpool_get(ConstantPool *constpool, uint32_t index)
     switch (index)
     {
     case CONSTPOOL_CLASS_CONSOLE:
-        return &classConsoleEntry;
+        return &class_console_entry;
     case CONSTPOOL_METHOD_CONSOLE_PRINTLN:
-        return &methodConsolePrintlnEntry;
+        return &method_console_println_entry;
+    case CONSTPOOL_CLASS_STRING_BUILDER:
+        return &class_string_builder_entry;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_STRING:
+        return &method_string_builder_append_string_entry;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_INT:
+        return &method_string_builder_append_int_entry;
+    case CONSTPOOL_METHOD_STRING_BUILDER_APPEND_BOOL:
+        return &method_string_builder_append_bool_entry;
+    case CONSTPOOL_METHOD_STRING_BUILDER_TO_STRING:
+        return &method_string_builder_to_string_entry;
     default:
         return &constpool->entries[index - 1];
     }
