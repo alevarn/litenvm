@@ -58,6 +58,16 @@ void binform_write_constantpool(FILE *file, ConstantPool *constpool)
     }
 }
 
+void binform_write_instructions(FILE *file, InstructionStream *inststream)
+{
+    fwrite(&inststream->length, sizeof(uint32_t), 1, file);
+    for (uint32_t i = 0; i < inststream->length; i++)
+    {
+        fwrite(&inststream->instructions[i].opcode, sizeof(uint8_t), 1, file);
+        fwrite(&inststream->instructions[i].operand, sizeof(uint32_t), 1, file);
+    }
+}
+
 ConstantPool *binform_read_constantpool(FILE *file)
 {
     uint32_t length;
@@ -130,4 +140,15 @@ ConstantPool *binform_read_constantpool(FILE *file)
 
 InstructionStream *binform_read_instructions(FILE *file)
 {
+    uint32_t length;
+    fread(&length, sizeof(uint32_t), 1, file);
+    InstructionStream *inststream = inststream_new(length);
+
+    for (uint32_t i = 0; i < inststream->length; i++)
+    {
+        fread(&inststream->instructions[i].opcode, sizeof(uint8_t), 1, file);
+        fread(&inststream->instructions[i].operand, sizeof(uint32_t), 1, file);
+    }
+
+    return inststream;
 }

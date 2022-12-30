@@ -14,10 +14,17 @@ static int setup()
     constantpool_add(constpool, 2, (ConstantPoolEntry){.type = TYPE_METHOD, .data.method = {.name = "sound", ._class = 1, .address = 2, .args = 3, .locals = 4}});
     constantpool_add(constpool, 3, (ConstantPoolEntry){.type = TYPE_FIELD, .data.field = {.name = "age", ._class = 1, .index = 0}});
     constantpool_add(constpool, 4, (ConstantPoolEntry){.type = TYPE_STRING, .data.string = {.value = "This is a long string"}});
+    InstructionStream *inststream = inststream_new(4);
+    inststream->instructions[0] = (Instruction){.opcode = PUSH, .operand = 1};
+    inststream->instructions[1] = (Instruction){.opcode = POP, .operand = 0};
+    inststream->instructions[2] = (Instruction){.opcode = NEW, .operand = 120};
+    inststream->instructions[3] = (Instruction){.opcode = JUMP_EQ, .operand = 50};
     FILE *file = fopen(FILE_NAME, "wb");
     binform_write_constantpool(file, constpool);
+    binform_write_instructions(file, inststream);
     fclose(file);
     constantpool_free(constpool);
+    inststream_free(inststream);
     return 0;
 }
 
@@ -62,8 +69,22 @@ void binary_format_read_test(void **state)
     assert_string_equal("This is a long string", entry->data.string.value);
     config._free(entry->data.string.value);
 
+    InstructionStream *inststream = binform_read_instructions(file);
+
+    assert_int_equal(4, inststream->length);
+
+    assert_int_equal(PUSH, inststream->instructions[0].opcode);
+    assert_int_equal(1, inststream->instructions[0].operand);
+    assert_int_equal(POP, inststream->instructions[1].opcode);
+    assert_int_equal(0, inststream->instructions[1].operand);
+    assert_int_equal(NEW, inststream->instructions[2].opcode);
+    assert_int_equal(120, inststream->instructions[2].operand);
+    assert_int_equal(JUMP_EQ, inststream->instructions[3].opcode);
+    assert_int_equal(50, inststream->instructions[3].operand);
+
     fclose(file);
     constantpool_free(constpool);
+    inststream_free(inststream);
 }
 
 int main()
