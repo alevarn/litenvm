@@ -23,6 +23,11 @@ add_library(${LITENVM_CORE_TARGET} STATIC ${SRC_FILES})
 target_include_directories(${LITENVM_CORE_TARGET} PUBLIC ${INC_DIR})
 target_link_libraries(${LITENVM_CORE_TARGET} m)
 
+# Needed for htonl/ntohl functions on windows.
+IF (WIN32)
+    target_link_libraries(${LITENVM_CORE_TARGET} ws2_32)
+ENDIF()
+
 # Fetch the cmocka library and build all tests. 
 include(cmake/FetchCMocka.cmake)
 enable_testing()
