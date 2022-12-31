@@ -180,7 +180,7 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
     if (constpool)
     {
         printf("Constant pool:\n");
-        for (uint32_t i = 1; i < constpool->length; i++)
+        for (uint32_t i = 1; i <= constpool->length; i++)
         {
             ConstantPoolEntry *entry = constantpool_get(constpool, i);
 

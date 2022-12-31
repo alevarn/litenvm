@@ -18,9 +18,9 @@ static void print_version()
     printf("LitenVM VERSION %s\n", LITENVM_VERSION);
 }
 
-static FILE *open_file(FILE *file, const char *filename)
+static FILE *open_file(const char *filename)
 {
-    file = fopen(filename, "rb");
+    FILE *file = fopen(filename, "rb");
 
     if (!file)
     {
@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
     }
     else if (argc == 3 && strcmp(argv[1], "--print") == 0)
     {
-        FILE *file;
+        FILE *file = open_file(argv[2]);
 
-        if (open_file(file, argv[2]))
+        if (file)
         {
             ConstantPool *constpool = binform_read_constantpool(file);
             InstructionStream *inststream = binform_read_instructions(file);
@@ -53,12 +53,13 @@ int main(int argc, char *argv[])
     }
     else if (argc == 2)
     {
-        FILE *file;
+        FILE *file = open_file(argv[1]);
 
-        if (open_file(file, argv[1]))
+        if (file)
         {
             ConstantPool *constpool = binform_read_constantpool(file);
             InstructionStream *inststream = binform_read_instructions(file);
+            constantpool_compute_vtables(constpool);
             Executor *executor = executor_new(constpool, inststream);
             executor_step_all(executor);
         }
