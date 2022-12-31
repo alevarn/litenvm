@@ -196,7 +196,7 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
                 printf("#%d\t\tMETHOD\t\t%s (class=%d, address=%d, args=%d, locals=%d)\n", i, entry->data.method.name, entry->data.method._class, entry->data.method.address, entry->data.method.args, entry->data.method.locals);
                 break;
             case TYPE_STRING:
-                printf("#%d\t\tSTRING\t\t\"%s\"\n", i, "STRING", entry->data.string.value);
+                printf("#%d\t\tSTRING\t\t\"%s\"\n", i, entry->data.string.value);
                 break;
             }
         }
