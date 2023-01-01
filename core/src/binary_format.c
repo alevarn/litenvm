@@ -220,13 +220,13 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
                 printf("%d\t\t%s\t\t%d\n", i, "PUSH", operand);
                 break;
             case PUSH_STRING:
-                printf("%d\t\t%s\t%d\n", i, "PUSH_STRING", operand);
+                printf("%d\t\t%s\t%d\t\t// \"%s\"\n", i, "PUSH_STRING", operand, constantpool_get(constpool, operand)->data.string.value);
                 break;
             case PUSH_VAR:
                 printf("%d\t\t%s\t%d\n", i, "PUSH_VAR", operand);
                 break;
             case PUSH_FIELD:
-                printf("%d\t\t%s\t%d\n", i, "PUSH_FIELD", operand);
+                printf("%d\t\t%s\t%d\t\t// %s.%s\n", i, "PUSH_FIELD", operand, constantpool_get(constpool, constantpool_get(constpool, operand)->data.field._class)->data._class.name, constantpool_get(constpool, operand)->data.field.name);
                 break;
             case POP:
                 printf("%d\t\t%s\t\t%d\n", i, "POP", operand);
@@ -235,7 +235,7 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
                 printf("%d\t\t%s\t%d\n", i, "POP_VAR", operand);
                 break;
             case POP_FIELD:
-                printf("%d\t\t%s\t%d\n", i, "POP_FIELD", operand);
+                printf("%d\t\t%s\t%d\t\t// %s.%s\n", i, "POP_FIELD", operand, constantpool_get(constpool, constantpool_get(constpool, operand)->data.field._class)->data._class.name, constantpool_get(constpool, operand)->data.field.name);
                 break;
             case ADD:
                 printf("%d\t\t%s\t\t%d\n", i, "ADD", operand);
@@ -250,13 +250,13 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
                 printf("%d\t\t%s\t\t%d\n", i, "DIV", operand);
                 break;
             case CALL:
-                printf("%d\t\t%s\t\t%d\n", i, "CALL", operand);
+                printf("%d\t\t%s\t\t%d\t\t// %s.%s\n", i, "CALL", operand, constantpool_get(constpool, constantpool_get(constpool, operand)->data.method._class)->data._class.name, constantpool_get(constpool, operand)->data.method.name);
                 break;
             case RETURN:
                 printf("%d\t\t%s\t\t%d\n", i, "RETURN", operand);
                 break;
             case NEW:
-                printf("%d\t\t%s\t\t%d\n", i, "NEW", operand);
+                printf("%d\t\t%s\t\t%d\t\t// %s\n", i, "NEW", operand, constantpool_get(constpool, operand)->data._class.name);
                 break;
             case DUP:
                 printf("%d\t\t%s\t\t%d\n", i, "DUP", operand);
