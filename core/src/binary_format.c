@@ -220,22 +220,22 @@ void binform_print(ConstantPool *constpool, InstructionStream *inststream)
                 printf("%d\t\t%s\t\t%d\n", i, "PUSH", operand);
                 break;
             case PUSH_STRING:
-                printf("%d\t\t%s\t\t%d\n", i, "PUSH_STRING", operand);
+                printf("%d\t\t%s\t%d\n", i, "PUSH_STRING", operand);
                 break;
             case PUSH_VAR:
-                printf("%d\t\t%s\t\t%d\n", i, "PUSH_VAR", operand);
+                printf("%d\t\t%s\t%d\n", i, "PUSH_VAR", operand);
                 break;
             case PUSH_FIELD:
-                printf("%d\t\t%s\t\t%d\n", i, "PUSH_FIELD", operand);
+                printf("%d\t\t%s\t%d\n", i, "PUSH_FIELD", operand);
                 break;
             case POP:
                 printf("%d\t\t%s\t\t%d\n", i, "POP", operand);
                 break;
             case POP_VAR:
-                printf("%d\t\t%s\t\t%d\n", i, "POP_VAR", operand);
+                printf("%d\t\t%s\t%d\n", i, "POP_VAR", operand);
                 break;
             case POP_FIELD:
-                printf("%d\t\t%s\t\t%d\n", i, "POP_FIELD", operand);
+                printf("%d\t\t%s\t%d\n", i, "POP_FIELD", operand);
                 break;
             case ADD:
                 printf("%d\t\t%s\t\t%d\n", i, "ADD", operand);
