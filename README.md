@@ -2,6 +2,27 @@
 
 This is a minimalistic stack-based virtual machine written in C called *LitenVM* (*liten* means small in Swedish). *LitenVM* is similar to the Java Virtual Machine (JVM), but it has a much smaller instruction set, with only 22 different instructions. Additionally, *LitenVM* supports various features including strings, integer arithmetic, conditional and unconditional jumps, method calls, and subtype polymorphism. It also includes built-in support for native classes and methods, which can be utilized for string concatenation and console output. However, *LitenVM* lacks certain features that are essential for a commercial-grade virtual machine in today's world, such as a garbage collector, just-in-time compiler, and bytecode verifier to prevent the execution of dangerous code.
 
+## Build the project
+
+In the top-level folder run the following commands:
+1. `mkdir build`
+2. `cd build`
+3. `cmake ..`
+4. `cmake --build .`
+
+If successful, an exextuable program named *litenvm* should have been created inside the `build` folder.
+
+## Run the VM
+
+To execute *LitenVM* bytecode you must provide a binary `file` to the `litenvm` executable that contains
+the constant pool and the instruction stream encoded in the binary format described below.
+
+```
+./litenvm [--print] <file>
+```
+
+Use the `--print` flag to print the contents of the binary `file` in plaintext.
+
 ## Binary Format
 
 Down below is a context-free grammar that captures the main rules of *LitenVM*'s binary format. However, some restrictions cannot be expressed directly in context-free grammar. These limitations are added as side notes in the end.
@@ -105,3 +126,30 @@ Note that next to the name of each instruction is the opcode written as a hexade
 
 - `JUMP` (`0x80`): Performs an unconditional jump by setting the program counter to be equal to the immediate value. Note that we are using absolute and not relative addresses. 
 - `JUMP_XX` (`0x81-0x86`): Performs a jump if the condition is satisfied. The condition is checked by popping the two topmost elements and then comparing them with the `XX` operator. There are six different operators `XX = {eq,ne,lt,le,gt,ge}`, each operator corresponds to a unique instruction in the instruction set.
+
+## Example program
+
+Consider the following Hello World program in Java:
+```java
+public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello World!");
+  }
+}
+```
+
+The following *LitenVM* bytecode is suitable for executing this program:
+```
+Constant pool:
+#1              CLASS           Main (parent=0, fields=0, methods=1)
+#2              METHOD          <main> (class=1, address=2, args=1, locals=0)
+#3              STRING          "Hello World!"
+
+Instruction stream:
+0               NEW             1               // Main
+1               CALL            2               // Main.<main>
+2               NEW             -7              // Console
+3               PUSH_STRING     3               // "Hello World!"
+4               CALL            -6              // Console.println
+5               RETURN          0
+```
